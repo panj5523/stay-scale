@@ -18,6 +18,10 @@ body {
     var(--color-canvas);
 }
 
+body.drawer-open {
+  overflow: hidden;
+}
+
 button,
 input,
 textarea,
