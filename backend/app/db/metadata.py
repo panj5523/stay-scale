@@ -1,4 +1,9 @@
 from app.db.base import Base
+from app.modules.ingestion.models import (  # noqa: F401
+    IngestionBatch,
+    IngestionRecord,
+    ListingMatchRecord,
+)
 from app.modules.listings.models import (  # noqa: F401
     CanonicalListing,
     Facility,

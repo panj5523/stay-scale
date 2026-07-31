@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.modules.ingestion.models import IngestionBatch
     from app.modules.listings.models import PlatformListing
 
 
@@ -19,3 +20,4 @@ class Platform(TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     listings: Mapped[list["PlatformListing"]] = relationship(back_populates="platform")
+    ingestion_batches: Mapped[list["IngestionBatch"]] = relationship(back_populates="platform")

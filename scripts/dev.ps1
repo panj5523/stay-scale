@@ -1,7 +1,7 @@
 param(
     [ValidateSet(
         "help", "start", "stop", "restart", "status", "logs", "test", "install",
-        "db-migrate", "db-seed"
+        "db-migrate", "db-seed", "data-import"
     )]
     [string]$Action = "help"
 )
@@ -198,6 +198,20 @@ function Invoke-DemoDataSeed {
     try {
         & $python -m app.db.seed
         if ($LASTEXITCODE -ne 0) { throw "Demo data initialization failed." }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Invoke-DemoPlatformImport {
+    $python = Join-Path $BackendRoot ".venv\Scripts\python.exe"
+    $fixture = Join-Path $BackendRoot "fixtures\ingestion\tujia-demo.json"
+    Write-Step "Importing normalized demo platform data"
+    Push-Location $BackendRoot
+    try {
+        & $python -m app.modules.ingestion.cli --platform tujia --fixture $fixture
+        if ($LASTEXITCODE -ne 0) { throw "Demo platform data import failed." }
     }
     finally {
         Pop-Location
@@ -418,6 +432,7 @@ function Show-Help {
     Write-Host "make install  Install missing dependencies"
     Write-Host "make db-migrate  Apply pending MySQL migrations"
     Write-Host "make db-seed     Load or refresh demo data"
+    Write-Host "make data-import Import and match the demo platform fixture"
     Write-Host "`nWithout make, run .\start-dev.cmd or .\stop-dev.cmd."
 }
 
@@ -433,5 +448,6 @@ switch ($Action) {
     "install" { Install-Dependencies }
     "db-migrate" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration }
     "db-seed" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoDataSeed }
+    "data-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoPlatformImport }
     default { Show-Help }
 }

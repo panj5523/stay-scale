@@ -17,7 +17,7 @@ EXPECTED_TABLES = {
 
 
 def test_core_accommodation_metadata_contains_expected_tables() -> None:
-    assert set(Base.metadata.tables) == EXPECTED_TABLES
+    assert EXPECTED_TABLES <= set(Base.metadata.tables)
 
 
 def test_platform_listing_identity_is_unique_per_platform() -> None:

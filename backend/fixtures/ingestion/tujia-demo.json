@@ -1,0 +1,186 @@
+{
+  "platform": "tujia",
+  "listings": [
+    {
+      "listingId": "TJ-DL-2101",
+      "title": "云栖·洱海设计师庭院",
+      "propertyType": "homestay",
+      "description": "靠近才村码头的安静庭院，适合情侣与小家庭。",
+      "location": {
+        "province": "云南省",
+        "city": "大理市",
+        "district": "大理镇",
+        "address": "才村村委会月华路示范地址1号",
+        "latitude": 25.7072310,
+        "longitude": 100.1798420
+      },
+      "rating": 4.78,
+      "reviewCount": 415,
+      "url": "https://demo.stay-scale.local/tujia/TJ-DL-2101",
+      "capturedAt": "2026-07-31T12:00:00",
+      "amenities": ["WiFi", "厨房", "洗衣机", "空调", "投影"],
+      "rooms": [
+        {
+          "roomId": "TJ-R-201",
+          "name": "庭院景观大床房",
+          "areaM2": 33,
+          "bedType": "1张1.8米大床",
+          "bedCount": 1,
+          "maxGuests": 2,
+          "entireUnit": true,
+          "privateBathroom": true,
+          "view": "庭院",
+          "cancellationPolicy": "入住前24小时可免费取消",
+          "prices": [
+            {
+              "checkIn": "2026-10-02",
+              "checkOut": "2026-10-05",
+              "guests": 2,
+              "currency": "CNY",
+              "roomSubtotal": 1320,
+              "cleaningFee": 50,
+              "serviceFee": 30,
+              "total": 1400,
+              "priceType": "standard",
+              "available": true,
+              "remainingUnits": 2,
+              "capturedAt": "2026-07-31T12:00:00"
+            }
+          ]
+        },
+        {
+          "roomId": "TJ-R-202",
+          "name": "露台家庭房",
+          "areaM2": 46,
+          "bedType": "1张大床和1张单人床",
+          "bedCount": 2,
+          "maxGuests": 3,
+          "entireUnit": true,
+          "privateBathroom": true,
+          "view": "山景",
+          "cancellationPolicy": "入住前24小时可免费取消",
+          "prices": [
+            {
+              "checkIn": "2026-10-02",
+              "checkOut": "2026-10-05",
+              "guests": 2,
+              "currency": "CNY",
+              "roomSubtotal": 1680,
+              "cleaningFee": 50,
+              "serviceFee": 35,
+              "discount": 80,
+              "total": 1685,
+              "priceType": "promotion",
+              "conditions": "连续入住3晚优惠",
+              "available": true,
+              "remainingUnits": 2,
+              "capturedAt": "2026-07-31T12:00:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "listingId": "TJ-DL-2102",
+      "title": "大理古城苍山慢居",
+      "propertyType": "homestay",
+      "description": "位于古城生活区，步行餐饮便利，并提供适合老人的一楼房型。",
+      "location": {
+        "province": "云南省",
+        "city": "大理市",
+        "district": "大理镇",
+        "address": "古城人民路示范地址18号",
+        "latitude": 25.6939210,
+        "longitude": 100.1648330
+      },
+      "rating": 4.81,
+      "reviewCount": 301,
+      "url": "https://demo.stay-scale.local/tujia/TJ-DL-2102",
+      "capturedAt": "2026-07-31T12:00:00",
+      "amenities": ["WiFi", "厨房", "空调", "停车位", "一楼房型"],
+      "rooms": [
+        {
+          "roomId": "TJ-R-203",
+          "name": "古城一楼双床房",
+          "areaM2": 35,
+          "bedType": "2张1.2米单人床",
+          "bedCount": 2,
+          "maxGuests": 2,
+          "entireUnit": true,
+          "privateBathroom": true,
+          "view": "庭院",
+          "cancellationPolicy": "入住前24小时可免费取消",
+          "prices": [
+            {
+              "checkIn": "2026-10-02",
+              "checkOut": "2026-10-05",
+              "guests": 2,
+              "currency": "CNY",
+              "roomSubtotal": 1164,
+              "cleaningFee": 40,
+              "serviceFee": 28,
+              "discount": 60,
+              "total": 1172,
+              "priceType": "promotion",
+              "conditions": "国庆早订优惠",
+              "available": true,
+              "remainingUnits": 2,
+              "capturedAt": "2026-07-31T12:00:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "listingId": "TJ-DL-2103",
+      "title": "月白双廊一线海景民宿",
+      "propertyType": "guesthouse",
+      "description": "临近洱海的景观住宿，适合重视日出与海景的旅行者。",
+      "location": {
+        "province": "云南省",
+        "city": "大理市",
+        "district": "双廊镇",
+        "address": "双廊村环海路示范地址6号",
+        "latitude": 25.9084410,
+        "longitude": 100.1937270
+      },
+      "rating": 4.86,
+      "reviewCount": 522,
+      "url": "https://demo.stay-scale.local/tujia/TJ-DL-2103",
+      "capturedAt": "2026-07-31T12:00:00",
+      "amenities": ["WiFi", "空调", "投影", "海景"],
+      "rooms": [
+        {
+          "roomId": "TJ-R-204",
+          "name": "日出海景大床房",
+          "areaM2": 38,
+          "bedType": "1张1.8米大床",
+          "bedCount": 1,
+          "maxGuests": 2,
+          "entireUnit": true,
+          "privateBathroom": true,
+          "view": "海景",
+          "cancellationPolicy": "入住前24小时可免费取消",
+          "prices": [
+            {
+              "checkIn": "2026-10-02",
+              "checkOut": "2026-10-05",
+              "guests": 2,
+              "currency": "CNY",
+              "roomSubtotal": 2070,
+              "cleaningFee": 60,
+              "serviceFee": 40,
+              "discount": 100,
+              "total": 2070,
+              "priceType": "promotion",
+              "conditions": "连续入住优惠",
+              "available": true,
+              "remainingUnits": 2,
+              "capturedAt": "2026-07-31T12:00:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

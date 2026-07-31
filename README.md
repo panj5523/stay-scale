@@ -1,5 +1,15 @@
 # Stay Scale
 
+## M4 平台数据接入与归一化
+
+M4 增加平台适配器、字段归一化、同店匹配和完整导入审计。当前使用本地途家风格演示 JSON，不直接抓取真实平台页面。
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts\dev.ps1 data-import
+```
+
+导入批次可在 FastAPI 文档的 `ingestion` 分组查看。详细边界和验收步骤见 `docs/modules/M4-platform-ingestion.md`。
+
 ## M3 前端搜索与比价页面
 
 启动项目后打开 `http://127.0.0.1:5173/`，可以使用大理演示数据完成民宿搜索、设施和价格筛选，并打开跨平台报价详情。原运行环境状态页移动到 `http://127.0.0.1:5173/status`。

@@ -21,6 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.modules.ingestion.models import IngestionRecord, ListingMatchRecord
     from app.modules.platforms.models import Platform
     from app.modules.pricing.models import PriceSnapshot
 
@@ -52,6 +53,9 @@ class CanonicalListing(TimestampMixin, Base):
     facility_links: Mapped[list["ListingFacility"]] = relationship(
         back_populates="listing",
         cascade="all, delete-orphan",
+    )
+    match_records: Mapped[list["ListingMatchRecord"]] = relationship(
+        back_populates="canonical_listing"
     )
 
 
@@ -87,6 +91,9 @@ class PlatformListing(TimestampMixin, Base):
     room_types: Mapped[list["RoomType"]] = relationship(
         back_populates="platform_listing",
         cascade="all, delete-orphan",
+    )
+    ingestion_records: Mapped[list["IngestionRecord"]] = relationship(
+        back_populates="platform_listing"
     )
 
 
