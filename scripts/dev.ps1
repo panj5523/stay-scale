@@ -1,5 +1,8 @@
 param(
-    [ValidateSet("help", "start", "stop", "restart", "status", "logs", "test", "install")]
+    [ValidateSet(
+        "help", "start", "stop", "restart", "status", "logs", "test", "install",
+        "db-migrate", "db-seed"
+    )]
     [string]$Action = "help"
 )
 
@@ -175,6 +178,32 @@ function Start-Infrastructure {
     }
 }
 
+function Invoke-DatabaseMigration {
+    $alembic = Join-Path $BackendRoot ".venv\Scripts\alembic.exe"
+    Write-Step "Applying database migrations"
+    Push-Location $BackendRoot
+    try {
+        & $alembic upgrade head
+        if ($LASTEXITCODE -ne 0) { throw "Database migration failed." }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Invoke-DemoDataSeed {
+    $python = Join-Path $BackendRoot ".venv\Scripts\python.exe"
+    Write-Step "Loading idempotent demo data"
+    Push-Location $BackendRoot
+    try {
+        & $python -m app.db.seed
+        if ($LASTEXITCODE -ne 0) { throw "Demo data initialization failed." }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 function Stop-RecordedProcess([string]$PidFile, [string]$ExpectedText, [string]$Name) {
     if (-not (Test-Path -LiteralPath $PidFile)) {
         return
@@ -268,6 +297,8 @@ function Start-All {
     Ensure-RuntimeDirectory
     Ensure-Dependencies
     Start-Infrastructure
+    Invoke-DatabaseMigration
+    Invoke-DemoDataSeed
     Write-Step "Starting FastAPI and Vue"
     Start-Backend
     Start-Frontend
@@ -385,6 +416,8 @@ function Show-Help {
     Write-Host "make logs     Show recent logs"
     Write-Host "make test     Run backend and frontend checks"
     Write-Host "make install  Install missing dependencies"
+    Write-Host "make db-migrate  Apply pending MySQL migrations"
+    Write-Host "make db-seed     Load or refresh demo data"
     Write-Host "`nWithout make, run .\start-dev.cmd or .\stop-dev.cmd."
 }
 
@@ -398,5 +431,7 @@ switch ($Action) {
     "logs" { Show-Logs }
     "test" { Run-Tests }
     "install" { Install-Dependencies }
+    "db-migrate" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration }
+    "db-seed" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoDataSeed }
     default { Show-Help }
 }

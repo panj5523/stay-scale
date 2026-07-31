@@ -1,5 +1,31 @@
 # Stay Scale
 
+## M2 民宿查询与比价 API
+
+启动项目后，可通过 FastAPI 文档测试查询与报价接口：
+
+- API 文档：`http://127.0.0.1:8000/docs`
+- 搜索接口：`GET /api/v1/listings`
+- 报价详情：`GET /api/v1/listings/{public_id}`
+
+演示数据使用“大理市”、入住日期 `2026-10-02`、离店日期 `2026-10-05` 和 2 位住客。详细参数与验收方式见 `docs/modules/M2-listing-comparison-api.md`。
+
+## M1 数据库命令
+
+一键启动会自动应用 Alembic 迁移，并以幂等方式初始化演示数据。也可以单独执行：
+
+```powershell
+make db-migrate
+make db-seed
+```
+
+当前 Windows 环境未安装 Make 时，使用等价命令：
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts\dev.ps1 db-migrate
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts\dev.ps1 db-seed
+```
+
 民宿智能推荐、跨平台比价与旅行规划平台。当前已完成M0工程骨架，包含Vue 3前端、FastAPI后端、MySQL和Redis运行环境。
 
 ## 环境要求

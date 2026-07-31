@@ -9,6 +9,7 @@ description = "FastAPI backend for Stay Scale"
 requires-python = ">=3.12"
 dependencies = [
   "aiomysql>=0.3,<1",
+  "alembic>=1.16,<2",
   "cryptography>=45,<47",
   "fastapi>=0.116,<1",
   "pydantic-settings>=2.10,<3",
@@ -19,11 +20,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "httpx2>=2.9,<3",
+  "httpx>=0.28,<1",
   "pytest>=8.4,<10",
   "pytest-asyncio>=1.1,<2",
   "ruff>=0.12,<1",
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -2,7 +2,7 @@
 
 POWERSHELL := powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/dev.ps1
 
-.PHONY: help start dev up stop down restart status logs test install
+.PHONY: help start dev up stop down restart status logs test install db-migrate db-seed
 
 help:
 	@$(POWERSHELL) help
@@ -27,3 +27,9 @@ test:
 
 install:
 	@$(POWERSHELL) install
+
+db-migrate:
+	@$(POWERSHELL) db-migrate
+
+db-seed:
+	@$(POWERSHELL) db-seed
