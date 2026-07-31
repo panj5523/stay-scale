@@ -1,0 +1,356 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--color-canvas);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 85% 12%, rgb(216 107 61 / 12%), transparent 26rem),
+    linear-gradient(120deg, transparent 0 74%, rgb(36 90 80 / 5%) 74% 75%, transparent 75%),
+    var(--color-canvas);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.status-page {
+  position: relative;
+  width: min(1180px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 0 52px;
+  overflow: hidden;
+}
+
+.route-line {
+  position: absolute;
+  top: 146px;
+  right: 15px;
+  width: 300px;
+  height: 210px;
+  border-top: 1px dashed rgb(36 90 80 / 28%);
+  border-right: 1px dashed rgb(36 90 80 / 28%);
+  border-radius: 0 120px 0 0;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.route-line::before,
+.route-line::after {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  content: "";
+  background: var(--color-accent);
+  border: 5px solid var(--color-canvas);
+  border-radius: 50%;
+}
+
+.route-line::before {
+  top: -10px;
+  left: -2px;
+}
+
+.route-line::after {
+  right: -10px;
+  bottom: -2px;
+}
+
+.brand-bar,
+.panel-heading,
+.panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--color-primary-deep);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: var(--color-surface);
+  background: var(--color-primary);
+  border-radius: 50% 50% 50% 16%;
+  place-items: center;
+}
+
+.stage-badge,
+.service-status {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+}
+
+.stage-badge {
+  color: var(--color-primary);
+  background: rgb(255 252 246 / 72%);
+  border: 1px solid var(--color-border);
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  padding: 100px 0 66px;
+}
+
+.eyebrow,
+.panel-kicker,
+.next-step {
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 18px 0 24px;
+  color: var(--color-primary-deep);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  font-size: clamp(2.8rem, 7vw, 5.8rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.intro {
+  max-width: 650px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 1.05rem;
+  line-height: 1.9;
+}
+
+.status-panel {
+  position: relative;
+  z-index: 1;
+  padding: 34px;
+  background: rgb(255 252 246 / 90%);
+  border: 1px solid rgb(221 214 201 / 82%);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+}
+
+.panel-kicker {
+  margin: 0 0 7px;
+  color: var(--color-muted);
+  letter-spacing: 0.13em;
+}
+
+.panel-heading h2 {
+  margin: 0;
+  color: var(--color-primary-deep);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.refresh-button {
+  padding: 11px 16px;
+  color: var(--color-surface);
+  font-weight: 700;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-control);
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: var(--color-primary-deep);
+}
+
+.refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.connection-error {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  margin-top: 24px;
+  color: var(--color-danger);
+  background: rgb(184 77 62 / 7%);
+  border: 1px solid rgb(184 77 62 / 20%);
+  border-radius: 12px;
+}
+
+.connection-error p {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+}
+
+.error-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  background: var(--color-danger);
+  border-radius: 50%;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.service-card {
+  min-height: 150px;
+  padding: 20px;
+  background: var(--color-canvas);
+  border: 1px solid transparent;
+  border-radius: 14px;
+}
+
+.service-card h3 {
+  margin: 22px 0 8px;
+  color: var(--color-primary-deep);
+  font-size: 1.05rem;
+}
+
+.service-card p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.service-status {
+  padding: 5px 9px;
+  font-size: 0.68rem;
+}
+
+.service-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.service-status.is-up {
+  color: var(--color-success);
+  background: rgb(72 133 101 / 10%);
+}
+
+.service-status.is-up span {
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px rgb(72 133 101 / 11%);
+}
+
+.service-status.is-down {
+  color: var(--color-danger);
+  background: rgb(184 77 62 / 9%);
+}
+
+.service-status.is-down span {
+  background: var(--color-danger);
+}
+
+.panel-footer {
+  gap: 20px;
+  padding-top: 24px;
+  margin-top: 26px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.next-step {
+  margin: 28px 0 0;
+  color: var(--color-muted);
+  text-align: center;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 760px) {
+  .status-page {
+    width: min(100% - 28px, 620px);
+    padding-top: 18px;
+  }
+
+  .route-line {
+    top: 125px;
+    right: -150px;
+  }
+
+  .hero {
+    padding: 72px 0 46px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.55rem, 14vw, 4.4rem);
+  }
+
+  .status-panel {
+    padding: 22px;
+  }
+
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-card {
+    min-height: 0;
+  }
+
+  .panel-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+}
+
+@media (max-width: 440px) {
+  .brand-bar {
+    align-items: flex-start;
+  }
+
+  .stage-badge {
+    max-width: 120px;
+    text-align: center;
+  }
+
+  .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .refresh-button {
+    width: 100%;
+  }
+}

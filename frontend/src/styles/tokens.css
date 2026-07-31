@@ -1,0 +1,20 @@
+:root {
+  --color-primary: #245a50;
+  --color-primary-deep: #19463f;
+  --color-accent: #d86b3d;
+  --color-canvas: #f5f0e6;
+  --color-surface: #fffcf6;
+  --color-ink: #202a27;
+  --color-muted: #6f756f;
+  --color-border: #ddd6c9;
+  --color-success: #488565;
+  --color-danger: #b84d3e;
+  --shadow-card: 0 24px 60px rgb(31 58 51 / 10%);
+  --radius-card: 18px;
+  --radius-control: 10px;
+  font-family: "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}

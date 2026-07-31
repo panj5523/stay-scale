@@ -1,0 +1,1 @@
+"""Stay Scale backend application."""

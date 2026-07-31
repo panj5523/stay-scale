@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stay-scale-backend"
+version = "0.1.0"
+description = "FastAPI backend for Stay Scale"
+requires-python = ">=3.12"
+dependencies = [
+  "aiomysql>=0.3,<1",
+  "cryptography>=45,<47",
+  "fastapi>=0.116,<1",
+  "pydantic-settings>=2.10,<3",
+  "redis>=6,<8",
+  "sqlalchemy>=2.0,<3",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx2>=2.9,<3",
+  "pytest>=8.4,<10",
+  "pytest-asyncio>=1.1,<2",
+  "ruff>=0.12,<1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
