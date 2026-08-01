@@ -1,11 +1,18 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
 import { createRecommendation } from '../api/recommendations'
+import type { PreferenceParseResponse } from '../types/preferenceParsing'
 import type { RecommendationResponse } from '../types/recommendations'
 import RecommendationView from './RecommendationView.vue'
 
 vi.mock('../api/recommendations', () => ({
   createRecommendation: vi.fn(),
+}))
+
+vi.mock('../api/preferenceParsing', () => ({
+  parsePreferences: vi.fn(),
+  confirmPreferenceParse: vi.fn(),
 }))
 
 const completedResponse: RecommendationResponse = {
@@ -47,6 +54,34 @@ const completedResponse: RecommendationResponse = {
   generated_at: '2026-08-01T02:00:00',
 }
 
+const parseResponse: PreferenceParseResponse = {
+  session_id: 'parse-001',
+  status: 'needs_confirmation',
+  parser_name: 'local-rule-parser',
+  parser_version: 'zh-rules-v1',
+  confidence: '0.930',
+  original_text: '三人去大理看海',
+  draft: {
+    city: '大理市',
+    check_in: '2026-10-02',
+    check_out: '2026-10-05',
+    guests: 3,
+    budget_total: '2200',
+    preferred_facilities: ['sea_view'],
+    preferred_districts: ['双廊镇'],
+    travel_style: 'scenery',
+    risk_aversion: 'medium',
+  },
+  evidence: [
+    { field: 'city', matched_text: '大理', normalized_value: '大理市' },
+    { field: 'travel_style', matched_text: '看海', normalized_value: 'scenery' },
+  ],
+  missing_fields: [],
+  warnings: [],
+  created_at: '2026-08-01T03:00:00',
+  confirmed_at: null,
+}
+
 function mountView() {
   return mount(RecommendationView, {
     global: {
@@ -59,6 +94,10 @@ function mountView() {
 
 beforeEach(() => {
   vi.mocked(createRecommendation).mockReset().mockResolvedValue(completedResponse)
+  vi.mocked(parsePreferences).mockReset().mockResolvedValue(parseResponse)
+  vi.mocked(confirmPreferenceParse)
+    .mockReset()
+    .mockResolvedValue({ ...parseResponse, status: 'confirmed' })
 })
 
 describe('RecommendationView', () => {
@@ -130,5 +169,48 @@ describe('RecommendationView', () => {
 
     expect(createRecommendation).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('离店日期必须晚于入住日期。')
+  })
+
+  it('limits checkout to the day after check-in and repairs a reversed range', async () => {
+    const wrapper = mountView()
+    const checkIn = wrapper.find('input[name="check-in"]')
+    const checkOut = wrapper.find('input[name="check-out"]')
+
+    await checkIn.setValue('2026-10-06')
+
+    expect(checkOut.attributes('min')).toBe('2026-10-07')
+    expect((checkOut.element as HTMLInputElement).value).toBe('2026-10-07')
+  })
+
+  it('parses natural language, fills the form and confirms before recommending', async () => {
+    const wrapper = mountView()
+    const parseButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('识别并填入条件'))
+
+    await parseButton?.trigger('click')
+    await flushPromises()
+
+    expect(parsePreferences).toHaveBeenCalledOnce()
+    expect((wrapper.find('select[name="guests"]').element as HTMLSelectElement).value).toBe('3')
+    expect((wrapper.find('input[name="budget"]').element as HTMLInputElement).value).toBe('2200')
+    expect(wrapper.text()).toContain('已识别 2 项信息')
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(confirmPreferenceParse).toHaveBeenCalledWith(
+      'parse-001',
+      expect.objectContaining({
+        guests: 3,
+        budget_total: '2200',
+        preferred_facilities: ['sea_view'],
+        preferred_districts: ['双廊镇'],
+        travel_style: 'scenery',
+      }),
+    )
+    expect(createRecommendation).toHaveBeenCalledWith(
+      expect.objectContaining({ guests: 3, travelStyle: 'scenery' }),
+    )
   })
 })

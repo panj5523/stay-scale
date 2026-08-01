@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
 import { createRecommendation } from '../api/recommendations'
+import type {
+  ParsedPreferences,
+  PreferenceParseResponse,
+  RiskAversion,
+} from '../types/preferenceParsing'
 import type {
   RecommendationItem,
   RecommendationParams,
@@ -8,9 +14,10 @@ import type {
   ScoreBreakdown,
   TravelStyle,
 } from '../types/recommendations'
-import { formatShortDate, stayNights } from '../utils/format'
+import { formatShortDate, nextDateValue, stayNights } from '../utils/format'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
+type ParseState = 'idle' | 'loading' | 'success' | 'error'
 
 const travelStyles: Array<{
   code: TravelStyle
@@ -57,6 +64,13 @@ const form = reactive({
 })
 
 const loadState = ref<LoadState>('idle')
+const parseState = ref<ParseState>('idle')
+const naturalLanguageText = ref(
+  '两个人去大理，2026年10月2日到5日，总预算1600以内，想要高性价比，最好有无线网络和厨房。',
+)
+const parseResult = ref<PreferenceParseResponse | null>(null)
+const parseError = ref('')
+const parsedRiskAversion = ref<RiskAversion>('medium')
 const validationError = ref('')
 const requestError = ref('')
 const recommendation = ref<RecommendationResponse | null>(null)
@@ -65,6 +79,7 @@ const selectedStyle = computed(
   () => travelStyles.find((style) => style.code === form.travelStyle) ?? travelStyles[0],
 )
 const tripNights = computed(() => stayNights(form.checkIn, form.checkOut))
+const minimumCheckOut = computed(() => nextDateValue(form.checkIn))
 const resultTripLabel = computed(() => {
   const request = recommendation.value?.request
   if (!request) return ''
@@ -75,10 +90,74 @@ const resultStyleName = computed(() => {
   return travelStyles.find((style) => style.code === code)?.name ?? ''
 })
 
+const fieldLabels: Record<string, string> = {
+  city: '目的地',
+  check_in: '入住日期',
+  check_out: '离店日期',
+  guests: '住客人数',
+  budget_total: '总预算',
+  preferred_facilities: '设施偏好',
+  preferred_districts: '区域偏好',
+  travel_style: '旅行风格',
+  risk_aversion: '变更风险',
+}
+
 function toggleSelection(values: string[], value: string) {
   const index = values.indexOf(value)
   if (index >= 0) values.splice(index, 1)
   else values.push(value)
+}
+
+function syncCheckOut() {
+  if (form.checkIn && (!form.checkOut || form.checkOut < minimumCheckOut.value)) {
+    form.checkOut = minimumCheckOut.value
+  }
+}
+
+function applyParsedDraft(draft: ParsedPreferences) {
+  if (draft.city) form.city = draft.city
+  if (draft.check_in) form.checkIn = draft.check_in
+  if (draft.check_out) form.checkOut = draft.check_out
+  if (draft.guests) form.guests = draft.guests
+  if (draft.budget_total !== null) form.budgetTotal = String(draft.budget_total)
+  if (draft.travel_style) form.travelStyle = draft.travel_style
+  form.preferredFacilities = [...draft.preferred_facilities]
+  form.preferredDistricts = [...draft.preferred_districts]
+  parsedRiskAversion.value = draft.risk_aversion
+  syncCheckOut()
+}
+
+async function analyzeNaturalLanguage() {
+  if (naturalLanguageText.value.trim().length < 3) {
+    parseState.value = 'error'
+    parseError.value = '请至少输入一句完整的旅行需求。'
+    return
+  }
+  parseState.value = 'loading'
+  parseError.value = ''
+  try {
+    parseResult.value = await parsePreferences(naturalLanguageText.value.trim())
+    applyParsedDraft(parseResult.value.draft)
+    parseState.value = 'success'
+  } catch {
+    parseResult.value = null
+    parseState.value = 'error'
+    parseError.value = '需求识别暂时不可用，你仍然可以直接填写下方条件。'
+  }
+}
+
+function confirmedPreferences(): ParsedPreferences {
+  return {
+    city: form.city.trim(),
+    check_in: form.checkIn,
+    check_out: form.checkOut,
+    guests: Number(form.guests),
+    budget_total: form.budgetTotal || null,
+    preferred_facilities: [...form.preferredFacilities],
+    preferred_districts: [...form.preferredDistricts],
+    travel_style: form.travelStyle,
+    risk_aversion: parsedRiskAversion.value,
+  }
 }
 
 function validateForm(): boolean {
@@ -118,6 +197,12 @@ async function runRecommendation() {
   requestError.value = ''
 
   try {
+    if (parseResult.value?.status === 'needs_confirmation') {
+      parseResult.value = await confirmPreferenceParse(
+        parseResult.value.session_id,
+        confirmedPreferences(),
+      )
+    }
     recommendation.value = await createRecommendation(currentParams())
     loadState.value = 'success'
   } catch {
@@ -151,7 +236,7 @@ function rankLabel(item: RecommendationItem): string {
     </header>
 
     <section class="recommendation-hero">
-      <div class="hero-index" aria-hidden="true">06</div>
+      <div class="hero-index" aria-hidden="true">07</div>
       <div class="hero-copy">
         <p class="eyebrow">A STAY THAT FITS · 可解释推荐</p>
         <h1>不是替你决定，<br /><em>是把偏好算清楚。</em></h1>
@@ -168,6 +253,44 @@ function rankLabel(item: RecommendationItem): string {
     </section>
 
     <form id="preference-studio" class="preference-studio" @submit.prevent="runRecommendation">
+      <section class="language-brief" aria-labelledby="language-brief-title">
+        <div class="brief-heading">
+          <div>
+            <p>00 · NATURAL LANGUAGE</p>
+            <h2 id="language-brief-title">先用一句话，说出你想怎么住</h2>
+          </div>
+          <span>本地可解释解析 · 不依赖外部模型</span>
+        </div>
+        <div class="brief-input">
+          <textarea
+            v-model="naturalLanguageText"
+            rows="3"
+            maxlength="1000"
+            placeholder="例如：两个人十月去大理，预算 1600，想看海并且可以做饭。"
+          ></textarea>
+          <button type="button" :disabled="parseState === 'loading'" @click="analyzeNaturalLanguage">
+            {{ parseState === 'loading' ? '正在识别…' : '识别并填入条件' }}
+            <span aria-hidden="true">↘</span>
+          </button>
+        </div>
+        <p v-if="parseState === 'error'" class="parse-error" role="alert">{{ parseError }}</p>
+        <div v-if="parseResult" class="parse-review">
+          <div class="parse-summary">
+            <strong>已识别 {{ parseResult.evidence.length }} 项信息</strong>
+            <span>置信度 {{ Math.round(Number(parseResult.confidence) * 100) }}% · {{ parseResult.parser_version }}</span>
+          </div>
+          <div class="evidence-list">
+            <span v-for="item in parseResult.evidence" :key="`${item.field}-${item.matched_text}`">
+              <small>{{ fieldLabels[item.field] ?? item.field }}</small>{{ item.matched_text }}
+            </span>
+          </div>
+          <p v-if="parseResult.missing_fields.length" class="parse-warning">
+            还需补充：{{ parseResult.missing_fields.map((field) => fieldLabels[field] ?? field).join('、') }}
+          </p>
+          <p class="review-tip">识别结果已填入下方表单。请检查并修改，点击生成推荐时才会确认保存。</p>
+        </div>
+      </section>
+
       <div class="studio-heading">
         <div>
           <p>01 · TRIP BASICS</p>
@@ -183,11 +306,11 @@ function rankLabel(item: RecommendationItem): string {
         </label>
         <label>
           <span>入住</span>
-          <input v-model="form.checkIn" name="check-in" type="date" />
+          <input v-model="form.checkIn" name="check-in" type="date" @change="syncCheckOut" />
         </label>
         <label>
           <span>离店</span>
-          <input v-model="form.checkOut" name="check-out" type="date" />
+          <input v-model="form.checkOut" name="check-out" type="date" :min="minimumCheckOut" />
         </label>
         <label>
           <span>住客</span>
@@ -254,7 +377,7 @@ function rankLabel(item: RecommendationItem): string {
           <p v-if="validationError" role="alert">{{ validationError }}</p>
         </div>
         <button type="submit" :disabled="loadState === 'loading'">
-          {{ loadState === 'loading' ? '正在计算匹配度…' : '生成我的推荐' }}
+          {{ loadState === 'loading' ? '正在计算匹配度…' : parseResult?.status === 'needs_confirmation' ? '确认偏好并生成推荐' : '生成我的推荐' }}
           <span aria-hidden="true">→</span>
         </button>
       </div>
@@ -339,7 +462,7 @@ function rankLabel(item: RecommendationItem): string {
 
     <footer class="recommendation-footer">
       <div><span class="brand-mark small">S</span><strong>Stay Scale</strong></div>
-      <p>推荐分数用于演示，不代表平台背书或真实预订建议 · M6 前端推荐体验</p>
+      <p>推荐分数用于演示，不代表平台背书或真实预订建议 · M7 自然语言需求解析</p>
       <RouterLink to="/status">检查服务状态 →</RouterLink>
     </footer>
   </main>
@@ -375,6 +498,25 @@ nav a.active::after { position: absolute; right: 0; bottom: 0; left: 0; height: 
 .hero-score p { grid-column: 1 / -1; margin: 20px 0 0; color: var(--color-accent); font-size: .6rem; font-weight: 800; line-height: 1.5; letter-spacing: .16em; text-align: center; }
 
 .preference-studio { padding: 42px; background: rgb(255 252 246 / 91%); border: 1px solid var(--color-border); border-radius: 24px; box-shadow: 0 30px 80px rgb(31 58 51 / 12%); }
+.language-brief { padding: 0 0 40px; margin-bottom: 40px; border-bottom: 1px solid var(--color-border); }
+.brief-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.brief-heading p { margin: 0; color: var(--color-accent); font-size: .68rem; font-weight: 900; letter-spacing: .16em; }
+.brief-heading h2 { margin: 8px 0 0; color: var(--color-primary-deep); font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 1.8rem; font-weight: 600; }
+.brief-heading > span { color: var(--color-muted); font-size: .68rem; }
+.brief-input { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 12px; margin-top: 22px; }
+.brief-input textarea { width: 100%; min-height: 104px; padding: 16px 18px; resize: vertical; color: var(--color-primary-deep); line-height: 1.7; background: var(--color-canvas); border: 1px solid var(--color-border); border-radius: 13px; outline: none; }
+.brief-input textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgb(36 90 80 / 8%); }
+.brief-input button { display: flex; align-items: center; justify-content: space-between; padding: 17px; color: white; font-weight: 800; background: var(--color-accent); border: 0; border-radius: 13px; }
+.brief-input button:hover:not(:disabled) { background: #bd5730; }
+.brief-input button:disabled { cursor: wait; opacity: .65; }
+.parse-error, .parse-warning { margin: 12px 0 0; color: var(--color-danger); font-size: .75rem; }
+.parse-review { padding: 18px; margin-top: 14px; background: rgb(36 90 80 / 6%); border: 1px solid rgb(36 90 80 / 14%); border-radius: 13px; }
+.parse-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--color-primary-deep); font-size: .78rem; }
+.parse-summary span { color: var(--color-muted); font-size: .68rem; }
+.evidence-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.evidence-list > span { display: inline-flex; gap: 7px; padding: 7px 10px; color: var(--color-primary-deep); font-size: .7rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 999px; }
+.evidence-list small { color: var(--color-accent); font-size: inherit; font-weight: 800; }
+.review-tip { margin: 13px 0 0; color: var(--color-muted); font-size: .68rem; }
 .studio-heading { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 26px; border-bottom: 1px solid var(--color-border); }
 .studio-heading h2, fieldset legend, .result-heading h2, .result-intro h2, .calculating-state h2, .empty-state h2 { margin: 8px 0 0; color: var(--color-primary-deep); font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 1.8rem; font-weight: 600; }
 .studio-heading > span { color: var(--color-muted); font-size: .78rem; }
@@ -476,6 +618,10 @@ fieldset legend span { margin-bottom: 7px; }
   .hero-score { display: none; }
   .hero-copy h1 { font-size: clamp(2.6rem, 13vw, 4.3rem); }
   .preference-studio { padding: 24px 18px; border-radius: 18px; }
+  .brief-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .brief-input { grid-template-columns: 1fr; }
+  .brief-input button { min-height: 52px; }
+  .parse-summary { align-items: flex-start; flex-direction: column; gap: 5px; }
   .studio-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
   .basic-grid { grid-template-columns: 1fr 1fr; }
   .basic-grid > label { border-bottom: 1px solid var(--color-border); }

@@ -10,7 +10,7 @@ import type {
   ListingSort,
   ListingSummary,
 } from '../types/listings'
-import { formatShortDate, stayNights } from '../utils/format'
+import { formatShortDate, nextDateValue, stayNights } from '../utils/format'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 
@@ -51,6 +51,7 @@ const detailError = ref('')
 const nights = computed(() =>
   stayNights(appliedSearch.value.checkIn, appliedSearch.value.checkOut),
 )
+const minimumCheckOut = computed(() => nextDateValue(form.checkIn))
 const stayLabel = computed(
   () =>
     `${formatShortDate(appliedSearch.value.checkIn)} — ${formatShortDate(appliedSearch.value.checkOut)}`,
@@ -105,6 +106,12 @@ function toggleFacility(code: string) {
   if (index >= 0) form.facilities.splice(index, 1)
   else form.facilities.push(code)
   void runSearch()
+}
+
+function syncCheckOut() {
+  if (form.checkIn && (!form.checkOut || form.checkOut < minimumCheckOut.value)) {
+    form.checkOut = minimumCheckOut.value
+  }
 }
 
 async function openComparison(listing: ListingSummary) {
@@ -170,12 +177,12 @@ onMounted(runSearch)
 
       <label>
         <span>入住</span>
-        <input v-model="form.checkIn" name="check-in" type="date" />
+        <input v-model="form.checkIn" name="check-in" type="date" @change="syncCheckOut" />
       </label>
 
       <label>
         <span>离店</span>
-        <input v-model="form.checkOut" name="check-out" type="date" />
+        <input v-model="form.checkOut" name="check-out" type="date" :min="minimumCheckOut" />
       </label>
 
       <label>

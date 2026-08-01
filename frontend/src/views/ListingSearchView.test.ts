@@ -143,4 +143,16 @@ describe('ListingSearchView', () => {
     expect(wrapper.text()).toContain('美团')
     expect(wrapper.text()).toContain('需美团会员')
   })
+
+  it('keeps checkout later than check-in', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    const checkIn = wrapper.find('input[name="check-in"]')
+    const checkOut = wrapper.find('input[name="check-out"]')
+
+    await checkIn.setValue('2026-10-06')
+
+    expect(checkOut.attributes('min')).toBe('2026-10-07')
+    expect((checkOut.element as HTMLInputElement).value).toBe('2026-10-07')
+  })
 })

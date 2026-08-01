@@ -16,3 +16,10 @@ export function formatShortDate(value: string): string {
   const [, month, day] = value.split('-')
   return `${Number(month)}月${Number(day)}日`
 }
+
+export function nextDateValue(value: string): string {
+  if (!value) return ''
+  const date = new Date(`${value}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString().slice(0, 10)
+}
