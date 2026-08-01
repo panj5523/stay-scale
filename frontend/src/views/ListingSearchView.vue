@@ -138,6 +138,7 @@ onMounted(runSearch)
 
       <nav aria-label="主导航">
         <a class="active" href="#results">找民宿</a>
+        <RouterLink to="/recommendations">智能推荐</RouterLink>
         <RouterLink to="/status">运行状态</RouterLink>
       </nav>
     </header>

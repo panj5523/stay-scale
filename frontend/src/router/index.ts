@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import EnvironmentStatusView from '../views/EnvironmentStatusView.vue'
 import ListingSearchView from '../views/ListingSearchView.vue'
+import RecommendationView from '../views/RecommendationView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -9,6 +10,11 @@ const router = createRouter({
       path: '/',
       name: 'listing-search',
       component: ListingSearchView,
+    },
+    {
+      path: '/recommendations',
+      name: 'recommendations',
+      component: RecommendationView,
     },
     {
       path: '/status',
