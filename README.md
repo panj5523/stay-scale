@@ -1,10 +1,26 @@
 # Stay Scale
 
+## M9 DeepSeek AI 基础设施
+
+M9 为后端增加独立的 AI Provider 层。配置 DeepSeek 后，需求解析会优先调用 DeepSeek JSON 输出；没有 Key、网络失败或输出不合格时自动回退到本地规则。默认仍是 `AI_PROVIDER=local`，不会影响现有运行环境。
+
+配置和验收方式见 `docs/modules/M9-deepseek-ai-foundation.md`。API Key 只能写入后端 `.env`，不能提交到 GitHub 或放入 Vue 前端。
+
+## M8 推荐解释与反馈调整
+
+M8 为推荐结果补充妥协与风险说明，并支持用户输入“想便宜一点”“更想看海”“住双廊镇”等反馈。系统把反馈转换成受支持的偏好字段，重新调用推荐引擎并保存调整前后会话。
+
+调整接口为 `POST /api/v1/recommendations/{session_id}/adjust`，详细边界和验收方式见 `docs/modules/M8-recommendation-feedback.md`。
+
 ## M7 自然语言需求解析与确认
 
 M7 在推荐页增加中文自然语言输入。系统会提取城市、日期、人数、预算、设施、区域和旅行风格，展示证据与置信度，用户检查修改并确认后才进入推荐计算。
 
 当前使用不依赖外部 API Key 的本地可解释解析器。接口位于 `POST /api/v1/preference-parses`，详细规则和验收步骤见 `docs/modules/M7-natural-language-preferences.md`。
+
+## 民宿数据新增流程
+
+民宿数据统一经过 M4 导入、归一化和匹配，再由后续 M13 管理审核后台确认后进入查询和推荐。开发阶段支持 JSON/CSV 演示文件，正式阶段优先使用官方/联盟 API、商家授权数据或正式合作接口；不采用未经授权的网页抓取。流程说明见 `docs/modules/M4-platform-ingestion.md` 和 `docs/modules/M13-management-review.md`。
 
 ## M6 前端个性化推荐体验
 

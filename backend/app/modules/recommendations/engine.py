@@ -63,6 +63,8 @@ class ScoredCandidate:
     total_score: Decimal
     breakdown: ScoreBreakdown
     reasons: list[str]
+    tradeoffs: list[str]
+    risk_notes: list[str]
 
 
 class RecommendationEngine:
@@ -139,12 +141,46 @@ class RecommendationEngine:
             desired_facilities,
             price_score,
         )
+        tradeoffs = self._tradeoffs(candidate, request, within_budget, desired_facilities, matched)
+        risk_notes = self._risk_notes(candidate, request)
         return ScoredCandidate(
             candidate=candidate,
             total_score=Decimal(str(total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
             breakdown=breakdown,
             reasons=reasons[:3],
+            tradeoffs=tradeoffs[:2],
+            risk_notes=risk_notes[:2],
         )
+
+    @staticmethod
+    def _tradeoffs(
+        candidate: RecommendationCandidate,
+        request: RecommendationRequest,
+        within_budget: bool,
+        desired_facilities: set[str],
+        matched: set[str],
+    ) -> list[str]:
+        notes: list[str] = []
+        if request.budget_total is not None and not within_budget:
+            notes.append(f"入住总价超出预算 {candidate.total_amount - request.budget_total:.0f} 元")
+        if desired_facilities and matched != desired_facilities:
+            notes.append(f"未完全满足设施偏好，缺少 {len(desired_facilities - matched)} 项")
+        if request.preferred_districts and candidate.district not in request.preferred_districts:
+            notes.append("不在你优先考虑的区域")
+        return notes
+
+    @staticmethod
+    def _risk_notes(
+        candidate: RecommendationCandidate, request: RecommendationRequest
+    ) -> list[str]:
+        notes: list[str] = []
+        if candidate.best_rating is None:
+            notes.append("当前没有可用的平台评分")
+        elif candidate.best_rating < Decimal("4.80"):
+            notes.append(f"平台最高评分为 {candidate.best_rating}，低于 4.8")
+        if candidate.platform_count < 3:
+            notes.append(f"当前仅覆盖 {candidate.platform_count} 个平台，价格可比样本较少")
+        return notes
 
     @staticmethod
     def _reasons(

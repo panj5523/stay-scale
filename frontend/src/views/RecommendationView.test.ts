@@ -1,13 +1,19 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
-import { createRecommendation } from '../api/recommendations'
+import {
+  adjustRecommendation,
+  createRecommendation,
+  explainRecommendation,
+} from '../api/recommendations'
 import type { PreferenceParseResponse } from '../types/preferenceParsing'
 import type { RecommendationResponse } from '../types/recommendations'
 import RecommendationView from './RecommendationView.vue'
 
 vi.mock('../api/recommendations', () => ({
   createRecommendation: vi.fn(),
+  adjustRecommendation: vi.fn(),
+  explainRecommendation: vi.fn(),
 }))
 
 vi.mock('../api/preferenceParsing', () => ({
@@ -94,6 +100,38 @@ function mountView() {
 
 beforeEach(() => {
   vi.mocked(createRecommendation).mockReset().mockResolvedValue(completedResponse)
+  vi.mocked(adjustRecommendation).mockReset().mockResolvedValue({
+    original_session_id: 'session-001',
+    new_session_id: 'session-002',
+    feedback: '更想看海',
+    applied_changes: { travel_style: 'scenery' },
+    warnings: [],
+    recommendation: {
+      ...completedResponse,
+      session_id: 'session-002',
+      request: { ...completedResponse.request, travel_style: 'scenery' },
+      results: [
+        {
+          ...completedResponse.results[0],
+          listing_name: '月白·双廊海景民宿',
+          risk_notes: ['当前仅覆盖 2 个平台，价格可比样本较少'],
+        },
+      ],
+    },
+  })
+  vi.mocked(explainRecommendation).mockReset().mockResolvedValue({
+    ...completedResponse,
+    explanation_status: 'generated',
+    explanation_provider: 'deepseek',
+    explanation_model: 'deepseek-v4-flash',
+    results: [
+      {
+        ...completedResponse.results[0],
+        natural_explanation: '这家民宿的总价在预算内且价格有优势，但当前平台覆盖数量有限。',
+        explanation_source: 'deepseek',
+      },
+    ],
+  })
   vi.mocked(parsePreferences).mockReset().mockResolvedValue(parseResponse)
   vi.mocked(confirmPreferenceParse)
     .mockReset()
@@ -122,6 +160,22 @@ describe('RecommendationView', () => {
     expect(wrapper.text()).toContain('古城南门设计师民宿')
     expect(wrapper.text()).toContain('90.91')
     expect(wrapper.text()).toContain('入住总价在你的预算内。')
+  })
+
+  it('generates evidence-bound natural explanations on demand', async () => {
+    const wrapper = mountView()
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    const explanationButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('生成 AI 推荐说明'))
+    await explanationButton?.trigger('click')
+    await flushPromises()
+
+    expect(explainRecommendation).toHaveBeenCalledWith('session-001')
+    expect(wrapper.text()).toContain('这家民宿的总价在预算内且价格有优势')
+    expect(wrapper.text()).toContain('DeepSeek 已生成')
   })
 
   it('sends selected travel style, facilities and districts', async () => {
@@ -212,5 +266,20 @@ describe('RecommendationView', () => {
     expect(createRecommendation).toHaveBeenCalledWith(
       expect.objectContaining({ guests: 3, travelStyle: 'scenery' }),
     )
+  })
+
+  it('adjusts an existing recommendation from constrained feedback', async () => {
+    const wrapper = mountView()
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    const feedbackInput = wrapper.find('input[placeholder*="想便宜一点"]')
+
+    await feedbackInput.setValue('更想看海')
+    await wrapper.find('form.feedback-bar').trigger('submit')
+    await flushPromises()
+
+    expect(adjustRecommendation).toHaveBeenCalledWith('session-001', '更想看海')
+    expect(wrapper.text()).toContain('月白·双廊海景民宿')
+    expect(wrapper.text()).toContain('当前仅覆盖 2 个平台')
   })
 })

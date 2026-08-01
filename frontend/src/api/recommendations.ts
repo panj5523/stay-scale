@@ -1,5 +1,9 @@
 import { apiClient } from './client'
-import type { RecommendationParams, RecommendationResponse } from '../types/recommendations'
+import type {
+  RecommendationAdjustmentResponse,
+  RecommendationParams,
+  RecommendationResponse,
+} from '../types/recommendations'
 
 export async function createRecommendation(
   params: RecommendationParams,
@@ -20,5 +24,23 @@ export async function createRecommendation(
 
 export async function getRecommendation(sessionId: string): Promise<RecommendationResponse> {
   const response = await apiClient.get<RecommendationResponse>(`/v1/recommendations/${sessionId}`)
+  return response.data
+}
+
+export async function explainRecommendation(sessionId: string): Promise<RecommendationResponse> {
+  const response = await apiClient.post<RecommendationResponse>(
+    `/v1/recommendations/${sessionId}/explanations`,
+  )
+  return response.data
+}
+
+export async function adjustRecommendation(
+  sessionId: string,
+  feedback: string,
+): Promise<RecommendationAdjustmentResponse> {
+  const response = await apiClient.post<RecommendationAdjustmentResponse>(
+    `/v1/recommendations/${sessionId}/adjust`,
+    { feedback },
+  )
   return response.data
 }

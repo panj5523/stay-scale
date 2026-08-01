@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
-import { createRecommendation } from '../api/recommendations'
+import {
+  adjustRecommendation,
+  createRecommendation,
+  explainRecommendation,
+} from '../api/recommendations'
 import type {
   ParsedPreferences,
   PreferenceParseResponse,
@@ -18,6 +22,8 @@ import { formatShortDate, nextDateValue, stayNights } from '../utils/format'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 type ParseState = 'idle' | 'loading' | 'success' | 'error'
+type FeedbackState = 'idle' | 'loading' | 'error'
+type ExplanationState = 'idle' | 'loading' | 'error'
 
 const travelStyles: Array<{
   code: TravelStyle
@@ -74,6 +80,11 @@ const parsedRiskAversion = ref<RiskAversion>('medium')
 const validationError = ref('')
 const requestError = ref('')
 const recommendation = ref<RecommendationResponse | null>(null)
+const feedbackText = ref('')
+const feedbackState = ref<FeedbackState>('idle')
+const feedbackError = ref('')
+const explanationState = ref<ExplanationState>('idle')
+const explanationError = ref('')
 
 const selectedStyle = computed(
   () => travelStyles.find((style) => style.code === form.travelStyle) ?? travelStyles[0],
@@ -212,6 +223,41 @@ async function runRecommendation() {
   }
 }
 
+async function applyFeedback() {
+  if (!recommendation.value || feedbackText.value.trim().length < 3) {
+    feedbackState.value = 'error'
+    feedbackError.value = '请至少输入一条具体调整，例如“想便宜一点”或“我想看海”。'
+    return
+  }
+  feedbackState.value = 'loading'
+  feedbackError.value = ''
+  try {
+    const adjustment = await adjustRecommendation(
+      recommendation.value.session_id,
+      feedbackText.value.trim(),
+    )
+    recommendation.value = adjustment.recommendation
+    feedbackText.value = ''
+    feedbackState.value = 'idle'
+  } catch {
+    feedbackState.value = 'error'
+    feedbackError.value = '调整暂时失败，原推荐结果仍然保留。'
+  }
+}
+
+async function generateNaturalExplanations() {
+  if (!recommendation.value) return
+  explanationState.value = 'loading'
+  explanationError.value = ''
+  try {
+    recommendation.value = await explainRecommendation(recommendation.value.session_id)
+    explanationState.value = 'idle'
+  } catch {
+    explanationState.value = 'error'
+    explanationError.value = '推荐解读暂时生成失败，原始评分依据仍然有效。'
+  }
+}
+
 function scoreWidth(score: string): string {
   return `${Math.min(100, Math.max(0, Number(score)))}%`
 }
@@ -236,7 +282,7 @@ function rankLabel(item: RecommendationItem): string {
     </header>
 
     <section class="recommendation-hero">
-      <div class="hero-index" aria-hidden="true">07</div>
+      <div class="hero-index" aria-hidden="true">08</div>
       <div class="hero-copy">
         <p class="eyebrow">A STAY THAT FITS · 可解释推荐</p>
         <h1>不是替你决定，<br /><em>是把偏好算清楚。</em></h1>
@@ -421,6 +467,42 @@ function rankLabel(item: RecommendationItem): string {
           </div>
         </div>
 
+        <form class="feedback-bar" @submit.prevent="applyFeedback">
+          <div>
+            <span>05 · TUNE THE MATCH</span>
+            <strong>还想怎么调整？</strong>
+          </div>
+          <input v-model="feedbackText" placeholder="例如：想便宜一点，或者更想住在双廊镇" />
+          <button type="submit" :disabled="feedbackState === 'loading'">
+            {{ feedbackState === 'loading' ? '重新计算…' : '调整推荐' }} <b>↗</b>
+          </button>
+          <p v-if="feedbackError" role="alert">{{ feedbackError }}</p>
+        </form>
+
+
+        <div class="ai-explanation-bar">
+          <div>
+            <span>06 · EVIDENCE-BOUND AI</span>
+            <strong>让 DeepSeek 解读这组推荐</strong>
+            <small>只改写现有价格、评分和优缺点证据，不参与排序。</small>
+          </div>
+          <button
+            v-if="recommendation.explanation_status === 'not_requested' || !recommendation.explanation_status"
+            type="button"
+            :disabled="explanationState === 'loading'"
+            @click="generateNaturalExplanations"
+          >
+            {{ explanationState === 'loading' ? '正在生成…' : '生成 AI 推荐说明' }}
+          </button>
+          <span v-else class="explanation-badge">
+            {{ recommendation.explanation_status === 'generated' ? 'DeepSeek 已生成' : '本地证据说明' }}
+          </span>
+          <p v-if="explanationError" role="alert">{{ explanationError }}</p>
+          <p v-else-if="recommendation.explanation_warning" class="explanation-warning">
+            {{ recommendation.explanation_warning }}
+          </p>
+        </div>
+
         <article v-for="item in recommendation.results" :key="item.listing_public_id" class="recommendation-card">
           <div class="rank-column">
             <span>RANK</span>
@@ -431,9 +513,15 @@ function rankLabel(item: RecommendationItem): string {
           <div class="listing-summary">
             <p>{{ item.district }} · {{ item.platform_count }} 个平台可比</p>
             <h3>{{ item.listing_name }}</h3>
+            <blockquote v-if="item.natural_explanation" class="natural-explanation">
+              {{ item.natural_explanation }}
+            </blockquote>
             <ul>
               <li v-for="reason in item.reasons" :key="reason">{{ reason }}</li>
             </ul>
+            <div v-if="item.tradeoffs?.length || item.risk_notes?.length" class="caveat-list">
+              <span v-for="note in [...(item.tradeoffs ?? []), ...(item.risk_notes ?? [])]" :key="note">{{ note }}</span>
+            </div>
             <div class="listing-facts">
               <span><small>入住总价</small><strong>¥{{ Number(item.total_amount).toLocaleString('zh-CN') }}</strong></span>
               <span><small>最高评分</small><strong>{{ item.best_rating ?? '暂无' }}</strong></span>
@@ -462,7 +550,7 @@ function rankLabel(item: RecommendationItem): string {
 
     <footer class="recommendation-footer">
       <div><span class="brand-mark small">S</span><strong>Stay Scale</strong></div>
-      <p>推荐分数用于演示，不代表平台背书或真实预订建议 · M7 自然语言需求解析</p>
+      <p>推荐分数用于演示，不代表平台背书或真实预订建议 · M10 基于证据的 AI 推荐说明</p>
       <RouterLink to="/status">检查服务状态 →</RouterLink>
     </footer>
   </main>
@@ -563,6 +651,25 @@ fieldset legend span { margin-bottom: 7px; }
 .result-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 26px; }
 .result-meta { display: flex; flex-direction: column; align-items: flex-end; color: var(--color-primary-deep); font-size: .78rem; }
 .result-meta span { margin-top: 5px; color: var(--color-muted); font-size: .7rem; }
+.feedback-bar { position: relative; display: grid; grid-template-columns: 190px minmax(0, 1fr) 150px; gap: 12px; align-items: center; padding: 16px; margin-bottom: 18px; background: rgb(216 107 61 / 7%); border: 1px solid rgb(216 107 61 / 20%); border-radius: 14px; }
+.feedback-bar > div { display: flex; flex-direction: column; }
+.feedback-bar span { color: var(--color-accent); font-size: .58rem; font-weight: 900; letter-spacing: .14em; }
+.feedback-bar strong { margin-top: 6px; color: var(--color-primary-deep); font-size: .85rem; }
+.feedback-bar input { width: 100%; padding: 12px 14px; color: var(--color-primary-deep); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 9px; outline: 0; }
+.feedback-bar input:focus { border-color: var(--color-accent); }
+.feedback-bar button { padding: 12px 14px; color: white; font-weight: 800; background: var(--color-accent); border: 0; border-radius: 9px; }
+.feedback-bar button:disabled { cursor: wait; opacity: .6; }
+.feedback-bar p { position: absolute; bottom: -24px; left: 16px; margin: 0; color: var(--color-danger); font-size: .68rem; }
+.ai-explanation-bar { position: relative; display: flex; gap: 24px; align-items: center; justify-content: space-between; padding: 18px 20px; margin: 28px 0 18px; background: rgb(36 90 80 / 6%); border: 1px solid rgb(36 90 80 / 16%); border-radius: 14px; }
+.ai-explanation-bar > div { display: flex; flex-direction: column; }
+.ai-explanation-bar span { color: var(--color-accent); font-size: .58rem; font-weight: 900; letter-spacing: .14em; }
+.ai-explanation-bar strong { margin-top: 5px; color: var(--color-primary-deep); font-size: .88rem; }
+.ai-explanation-bar small { margin-top: 5px; color: var(--color-muted); font-size: .66rem; }
+.ai-explanation-bar button { padding: 12px 16px; color: white; font-weight: 800; background: var(--color-primary); border: 0; border-radius: 9px; }
+.ai-explanation-bar button:disabled { cursor: wait; opacity: .6; }
+.ai-explanation-bar .explanation-badge { padding: 8px 11px; color: var(--color-primary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 999px; white-space: nowrap; }
+.ai-explanation-bar > p { position: absolute; bottom: -22px; left: 20px; margin: 0; color: var(--color-danger); font-size: .68rem; }
+.ai-explanation-bar > p.explanation-warning { color: var(--color-muted); }
 .recommendation-card { display: grid; grid-template-columns: 90px minmax(0, 1fr) 360px; min-height: 310px; margin-top: 16px; overflow: hidden; background: rgb(255 252 246 / 88%); border: 1px solid var(--color-border); border-radius: 22px; box-shadow: 0 18px 50px rgb(31 58 51 / 7%); }
 .rank-column { display: flex; align-items: center; flex-direction: column; padding: 26px 12px; color: var(--color-muted); background: rgb(36 90 80 / 5%); }
 .rank-column span { font-size: .56rem; font-weight: 900; letter-spacing: .16em; }
@@ -571,9 +678,12 @@ fieldset legend span { margin-bottom: 7px; }
 .listing-summary { display: flex; min-width: 0; padding: 32px; flex-direction: column; }
 .listing-summary > p { margin: 0; color: var(--color-accent); font-size: .66rem; font-weight: 800; letter-spacing: .1em; }
 .listing-summary h3 { margin: 10px 0 18px; color: var(--color-primary-deep); font-family: 'Noto Serif SC', serif; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 600; }
+.natural-explanation { padding: 13px 15px; margin: 0 0 16px; color: var(--color-primary-deep); font-family: 'Noto Serif SC', serif; font-size: .8rem; line-height: 1.75; background: rgb(216 107 61 / 6%); border: 0; border-left: 3px solid var(--color-accent); border-radius: 0 9px 9px 0; }
 .listing-summary ul { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
 .listing-summary li { position: relative; padding-left: 17px; color: var(--color-muted); font-size: .8rem; line-height: 1.55; }
 .listing-summary li::before { position: absolute; top: .5em; left: 0; width: 6px; height: 6px; content: ''; background: var(--color-success); border-radius: 50%; }
+.caveat-list { display: grid; gap: 5px; padding-top: 13px; margin-top: 15px; color: var(--color-muted); font-size: .68rem; border-top: 1px dashed var(--color-border); }
+.caveat-list span::before { margin-right: 7px; color: var(--color-accent); content: '↳'; }
 .listing-facts { display: flex; gap: 28px; align-items: flex-end; padding-top: 22px; margin-top: auto; border-top: 1px solid var(--color-border); }
 .listing-facts span { display: flex; flex-direction: column; }
 .listing-facts small { color: var(--color-muted); font-size: .6rem; }
@@ -637,6 +747,10 @@ fieldset legend span { margin-bottom: 7px; }
   .result-section { padding-top: 62px; }
   .result-heading { align-items: flex-start; flex-direction: column; gap: 14px; }
   .result-meta { align-items: flex-start; }
+  .feedback-bar { grid-template-columns: 1fr; }
+  .feedback-bar button { width: 100%; }
+  .ai-explanation-bar { align-items: stretch; flex-direction: column; gap: 14px; }
+  .ai-explanation-bar button { width: 100%; }
   .recommendation-card { grid-template-columns: 58px minmax(0, 1fr); }
   .rank-column { padding-inline: 7px; }
   .rank-column strong { font-size: 2.2rem; }

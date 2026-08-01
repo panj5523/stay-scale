@@ -63,6 +63,39 @@ def test_missing_recommendation_session_returns_not_found(monkeypatch) -> None:
     assert response.json() == {"detail": "Recommendation session not found"}
 
 
+def test_generate_recommendation_explanations(monkeypatch) -> None:
+    async def fake_explain(
+        _service: RecommendationService,
+        _session_id: str,
+    ) -> RecommendationResponse:
+        request = RecommendationRequest(
+            city="大理市",
+            check_in=date(2026, 10, 2),
+            check_out=date(2026, 10, 5),
+        )
+        return RecommendationResponse(
+            session_id="demo-session",
+            status="completed",
+            algorithm_version="explainable-v1",
+            request=request,
+            results=[],
+            generated_at=datetime(2026, 8, 1, 2, 0, 0),
+            explanation_status="generated",
+            explanation_provider="deepseek",
+        )
+
+    monkeypatch.setattr(RecommendationService, "explain", fake_explain)
+    app.dependency_overrides[get_db_session] = fake_session
+    try:
+        with TestClient(app) as client:
+            response = client.post("/api/v1/recommendations/demo-session/explanations")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["explanation_status"] == "generated"
+
+
 def test_recommendation_endpoint_validates_dates() -> None:
     with TestClient(app) as client:
         response = client.post(

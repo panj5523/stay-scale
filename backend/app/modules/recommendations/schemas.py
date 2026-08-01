@@ -47,6 +47,10 @@ class RecommendationItem(BaseModel):
     total_score: Decimal
     score_breakdown: ScoreBreakdown
     reasons: list[str]
+    tradeoffs: list[str] = Field(default_factory=list)
+    risk_notes: list[str] = Field(default_factory=list)
+    natural_explanation: str | None = Field(default=None, max_length=500)
+    explanation_source: str | None = Field(default=None, max_length=32)
 
 
 class RecommendationResponse(BaseModel):
@@ -56,3 +60,20 @@ class RecommendationResponse(BaseModel):
     request: RecommendationRequest
     results: list[RecommendationItem]
     generated_at: datetime
+    explanation_status: Literal["not_requested", "generated", "fallback"] = "not_requested"
+    explanation_provider: str | None = None
+    explanation_model: str | None = None
+    explanation_warning: str | None = None
+
+
+class RecommendationAdjustmentRequest(BaseModel):
+    feedback: str = Field(min_length=3, max_length=500)
+
+
+class RecommendationAdjustmentResponse(BaseModel):
+    original_session_id: str
+    new_session_id: str
+    feedback: str
+    applied_changes: dict[str, object]
+    warnings: list[str]
+    recommendation: RecommendationResponse

@@ -32,6 +32,19 @@ export interface RecommendationItem {
   total_score: string
   score_breakdown: ScoreBreakdown
   reasons: string[]
+  tradeoffs?: string[]
+  risk_notes?: string[]
+  natural_explanation?: string | null
+  explanation_source?: string | null
+}
+
+export interface RecommendationAdjustmentResponse {
+  original_session_id: string
+  new_session_id: string
+  feedback: string
+  applied_changes: Record<string, unknown>
+  warnings: string[]
+  recommendation: RecommendationResponse
 }
 
 export interface RecommendationRequestSnapshot {
@@ -53,4 +66,8 @@ export interface RecommendationResponse {
   request: RecommendationRequestSnapshot
   results: RecommendationItem[]
   generated_at: string
+  explanation_status?: 'not_requested' | 'generated' | 'fallback'
+  explanation_provider?: string | null
+  explanation_model?: string | null
+  explanation_warning?: string | null
 }

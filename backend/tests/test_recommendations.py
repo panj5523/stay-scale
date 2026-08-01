@@ -7,6 +7,7 @@ from sqlalchemy import CheckConstraint
 
 from app.db.metadata import Base
 from app.modules.recommendations.engine import RecommendationCandidate, RecommendationEngine
+from app.modules.recommendations.feedback import RecommendationFeedbackInterpreter
 from app.modules.recommendations.schemas import RecommendationRequest
 
 
@@ -110,3 +111,26 @@ def test_recommendation_tables_and_score_constraint_exist() -> None:
     }
 
     assert "ck_recommendation_results_score_range" in check_names
+
+
+def test_explanations_include_budget_tradeoff_and_platform_risk() -> None:
+    ranked = RecommendationEngine().rank(
+        candidates(),
+        request(travel_style="scenery", budget_total=Decimal("1600")),
+    )
+    sea_view = next(item for item in ranked if item.candidate.public_id == "DL_000003")
+
+    assert any("超出预算" in note for note in sea_view.tradeoffs)
+    assert any("仅覆盖 2 个平台" in note for note in sea_view.risk_notes)
+
+
+def test_feedback_interpreter_changes_only_supported_preferences() -> None:
+    interpretation = RecommendationFeedbackInterpreter().interpret(
+        "更想看海，最好住在双廊镇",
+        request(travel_style="value"),
+    )
+
+    assert interpretation.request.travel_style == "scenery"
+    assert interpretation.request.preferred_facilities == ["sea_view"]
+    assert interpretation.request.preferred_districts == ["双廊镇"]
+    assert interpretation.applied_changes["travel_style"] == "scenery"
