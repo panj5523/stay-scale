@@ -19,5 +19,6 @@ from app.modules.recommendations.models import (  # noqa: F401
     RecommendationResult,
     RecommendationSession,
 )
+from app.modules.travel_planning.models import TravelPlanDraft  # noqa: F401
 
 __all__ = ["Base"]

@@ -71,3 +71,32 @@ export interface RecommendationResponse {
   explanation_model?: string | null
   explanation_warning?: string | null
 }
+
+export interface TravelPlanItem {
+  time_label: string
+  activity: string
+  reason: string
+  note: string
+}
+
+export interface TravelPlanDay {
+  date: string
+  title: string
+  items: TravelPlanItem[]
+}
+
+export interface TravelPlanResponse {
+  plan_id: string
+  recommendation_session_id: string
+  status: 'draft'
+  city: string
+  check_in: string
+  check_out: string
+  guests: number
+  provider: string
+  model: string
+  summary: string
+  days: TravelPlanDay[]
+  warnings: string[]
+  created_at: string
+}

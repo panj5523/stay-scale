@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
 import {
   adjustRecommendation,
+  createTravelPlan,
   createRecommendation,
   explainRecommendation,
 } from '../api/recommendations'
@@ -17,6 +18,7 @@ import type {
   RecommendationResponse,
   ScoreBreakdown,
   TravelStyle,
+  TravelPlanResponse,
 } from '../types/recommendations'
 import { formatShortDate, nextDateValue, stayNights } from '../utils/format'
 
@@ -24,6 +26,7 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error'
 type ParseState = 'idle' | 'loading' | 'success' | 'error'
 type FeedbackState = 'idle' | 'loading' | 'error'
 type ExplanationState = 'idle' | 'loading' | 'error'
+type PlanState = 'idle' | 'loading' | 'error'
 
 const travelStyles: Array<{
   code: TravelStyle
@@ -85,6 +88,9 @@ const feedbackState = ref<FeedbackState>('idle')
 const feedbackError = ref('')
 const explanationState = ref<ExplanationState>('idle')
 const explanationError = ref('')
+const travelPlan = ref<TravelPlanResponse | null>(null)
+const planState = ref<PlanState>('idle')
+const planError = ref('')
 
 const selectedStyle = computed(
   () => travelStyles.find((style) => style.code === form.travelStyle) ?? travelStyles[0],
@@ -255,6 +261,19 @@ async function generateNaturalExplanations() {
   } catch {
     explanationState.value = 'error'
     explanationError.value = '推荐解读暂时生成失败，原始评分依据仍然有效。'
+  }
+}
+
+async function generateTravelPlan() {
+  if (!recommendation.value) return
+  planState.value = 'loading'
+  planError.value = ''
+  try {
+    travelPlan.value = await createTravelPlan(recommendation.value.session_id)
+    planState.value = 'idle'
+  } catch {
+    planState.value = 'error'
+    planError.value = '旅行计划草稿暂时生成失败，推荐结果不受影响。'
   }
 }
 
@@ -503,6 +522,41 @@ function rankLabel(item: RecommendationItem): string {
           </p>
         </div>
 
+        <div class="travel-plan-bar">
+          <div>
+            <span>07 · TRIP DRAFT</span>
+            <strong>把住宿选择整理成旅行计划草稿</strong>
+            <small>只生成可编辑建议，景点、交通和开放时间都需要你出发前确认。</small>
+          </div>
+          <button type="button" :disabled="planState === 'loading'" @click="generateTravelPlan">
+            {{ planState === 'loading' ? '正在整理…' : travelPlan ? '重新查看草稿' : '生成旅行计划草稿' }}
+          </button>
+          <p v-if="planError" role="alert">{{ planError }}</p>
+        </div>
+
+        <section v-if="travelPlan" class="travel-plan" aria-labelledby="travel-plan-title">
+          <div class="travel-plan-heading">
+            <div>
+              <span>EDITABLE DRAFT · {{ travelPlan.provider }}</span>
+              <h2 id="travel-plan-title">{{ travelPlan.city }} 行程草稿</h2>
+            </div>
+            <small>{{ travelPlan.days.length }} 天 · {{ travelPlan.guests }} 位旅客</small>
+          </div>
+          <p class="travel-plan-summary">{{ travelPlan.summary }}</p>
+          <div class="travel-plan-days">
+            <article v-for="day in travelPlan.days" :key="day.date">
+              <div class="plan-day-mark"><strong>{{ formatShortDate(day.date) }}</strong><span>{{ day.title }}</span></div>
+              <div class="plan-items">
+                <div v-for="item in day.items" :key="`${day.date}-${item.time_label}-${item.activity}`">
+                  <b>{{ item.time_label }}</b><strong>{{ item.activity }}</strong>
+                  <small>{{ item.reason }} · {{ item.note }}</small>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p v-for="warning in travelPlan.warnings" :key="warning" class="travel-plan-warning">{{ warning }}</p>
+        </section>
+
         <article v-for="item in recommendation.results" :key="item.listing_public_id" class="recommendation-card">
           <div class="rank-column">
             <span>RANK</span>
@@ -550,7 +604,7 @@ function rankLabel(item: RecommendationItem): string {
 
     <footer class="recommendation-footer">
       <div><span class="brand-mark small">S</span><strong>Stay Scale</strong></div>
-      <p>推荐分数用于演示，不代表平台背书或真实预订建议 · M10 基于证据的 AI 推荐说明</p>
+      <p>推荐分数用于演示，不代表平台背书或真实预订建议 · M11 AI 旅行计划草稿</p>
       <RouterLink to="/status">检查服务状态 →</RouterLink>
     </footer>
   </main>
@@ -670,6 +724,31 @@ fieldset legend span { margin-bottom: 7px; }
 .ai-explanation-bar .explanation-badge { padding: 8px 11px; color: var(--color-primary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 999px; white-space: nowrap; }
 .ai-explanation-bar > p { position: absolute; bottom: -22px; left: 20px; margin: 0; color: var(--color-danger); font-size: .68rem; }
 .ai-explanation-bar > p.explanation-warning { color: var(--color-muted); }
+.travel-plan-bar { position: relative; display: flex; gap: 24px; align-items: center; justify-content: space-between; padding: 18px 20px; margin: 26px 0 18px; background: rgb(216 107 61 / 6%); border: 1px solid rgb(216 107 61 / 18%); border-radius: 14px; }
+.travel-plan-bar > div { display: flex; flex-direction: column; }
+.travel-plan-bar span { color: var(--color-accent); font-size: .58rem; font-weight: 900; letter-spacing: .14em; }
+.travel-plan-bar strong { margin-top: 5px; color: var(--color-primary-deep); font-size: .88rem; }
+.travel-plan-bar small { margin-top: 5px; color: var(--color-muted); font-size: .66rem; }
+.travel-plan-bar button { padding: 12px 16px; color: white; font-weight: 800; background: var(--color-accent); border: 0; border-radius: 9px; }
+.travel-plan-bar button:disabled { cursor: wait; opacity: .6; }
+.travel-plan-bar > p { position: absolute; bottom: -22px; left: 20px; margin: 0; color: var(--color-danger); font-size: .68rem; }
+.travel-plan { padding: 26px; margin: 26px 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; }
+.travel-plan-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.travel-plan-heading span { color: var(--color-accent); font-size: .58rem; font-weight: 900; letter-spacing: .14em; }
+.travel-plan-heading h2 { margin: 7px 0 0; color: var(--color-primary-deep); font-family: 'Noto Serif SC', serif; font-size: 1.6rem; }
+.travel-plan-heading small { color: var(--color-muted); }
+.travel-plan-summary { padding: 13px 15px; margin: 20px 0; color: var(--color-primary-deep); font-size: .8rem; line-height: 1.7; background: rgb(36 90 80 / 6%); border-radius: 9px; }
+.travel-plan-days { display: grid; gap: 12px; }
+.travel-plan-days article { display: grid; grid-template-columns: 150px 1fr; gap: 18px; padding: 16px; border-top: 1px solid var(--color-border); }
+.plan-day-mark { display: flex; flex-direction: column; gap: 5px; }
+.plan-day-mark strong { color: var(--color-primary); font-family: Georgia, serif; }
+.plan-day-mark span { color: var(--color-muted); font-size: .75rem; }
+.plan-items { display: grid; gap: 10px; }
+.plan-items > div { display: grid; grid-template-columns: 60px 1fr; gap: 7px 12px; }
+.plan-items b { color: var(--color-accent); font-size: .7rem; }
+.plan-items strong { color: var(--color-primary-deep); font-size: .8rem; }
+.plan-items small { grid-column: 2; color: var(--color-muted); font-size: .68rem; line-height: 1.5; }
+.travel-plan-warning { margin: 18px 0 0; color: var(--color-muted); font-size: .68rem; }
 .recommendation-card { display: grid; grid-template-columns: 90px minmax(0, 1fr) 360px; min-height: 310px; margin-top: 16px; overflow: hidden; background: rgb(255 252 246 / 88%); border: 1px solid var(--color-border); border-radius: 22px; box-shadow: 0 18px 50px rgb(31 58 51 / 7%); }
 .rank-column { display: flex; align-items: center; flex-direction: column; padding: 26px 12px; color: var(--color-muted); background: rgb(36 90 80 / 5%); }
 .rank-column span { font-size: .56rem; font-weight: 900; letter-spacing: .16em; }
@@ -751,6 +830,11 @@ fieldset legend span { margin-bottom: 7px; }
   .feedback-bar button { width: 100%; }
   .ai-explanation-bar { align-items: stretch; flex-direction: column; gap: 14px; }
   .ai-explanation-bar button { width: 100%; }
+  .travel-plan-bar { align-items: stretch; flex-direction: column; gap: 14px; }
+  .travel-plan-bar button { width: 100%; }
+  .travel-plan { padding: 18px; }
+  .travel-plan-heading { align-items: flex-start; flex-direction: column; }
+  .travel-plan-days article { grid-template-columns: 1fr; gap: 9px; }
   .recommendation-card { grid-template-columns: 58px minmax(0, 1fr); }
   .rank-column { padding-inline: 7px; }
   .rank-column strong { font-size: 2.2rem; }

@@ -1,6 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.v1 import health, ingestion, listings, preference_parsing, recommendations
+from app.api.v1 import (
+    health,
+    ingestion,
+    listings,
+    preference_parsing,
+    recommendations,
+    travel_plans,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router, prefix="/health", tags=["health"])
@@ -16,3 +23,4 @@ api_router.include_router(
     prefix="/recommendations",
     tags=["recommendations"],
 )
+api_router.include_router(travel_plans.router, tags=["travel-plans"])

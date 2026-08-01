@@ -30,25 +30,17 @@ def upgrade() -> None:
     op.add_column(
         "recommendation_sessions", sa.Column("explanation_provider", sa.String(length=32))
     )
-    op.add_column(
-        "recommendation_sessions", sa.Column("explanation_model", sa.String(length=64))
-    )
-    op.add_column(
-        "recommendation_sessions", sa.Column("explanation_prompt_tokens", sa.Integer())
-    )
+    op.add_column("recommendation_sessions", sa.Column("explanation_model", sa.String(length=64)))
+    op.add_column("recommendation_sessions", sa.Column("explanation_prompt_tokens", sa.Integer()))
     op.add_column(
         "recommendation_sessions", sa.Column("explanation_completion_tokens", sa.Integer())
     )
-    op.add_column(
-        "recommendation_sessions", sa.Column("explanation_total_tokens", sa.Integer())
-    )
+    op.add_column("recommendation_sessions", sa.Column("explanation_total_tokens", sa.Integer()))
     op.add_column(
         "recommendation_sessions", sa.Column("explanation_error_code", sa.String(length=40))
     )
     op.add_column("recommendation_results", sa.Column("natural_explanation", sa.Text()))
-    op.add_column(
-        "recommendation_results", sa.Column("explanation_source", sa.String(length=32))
-    )
+    op.add_column("recommendation_results", sa.Column("explanation_source", sa.String(length=32)))
 
 
 def downgrade() -> None:

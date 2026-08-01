@@ -3,6 +3,7 @@ import type {
   RecommendationAdjustmentResponse,
   RecommendationParams,
   RecommendationResponse,
+  TravelPlanResponse,
 } from '../types/recommendations'
 
 export async function createRecommendation(
@@ -19,6 +20,13 @@ export async function createRecommendation(
     travel_style: params.travelStyle,
     top_k: params.topK,
   })
+  return response.data
+}
+
+export async function createTravelPlan(sessionId: string): Promise<TravelPlanResponse> {
+  const response = await apiClient.post<TravelPlanResponse>(
+    `/v1/recommendations/${sessionId}/travel-plan`,
+  )
   return response.data
 }
 

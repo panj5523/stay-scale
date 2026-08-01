@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
 import {
   adjustRecommendation,
+  createTravelPlan,
   createRecommendation,
   explainRecommendation,
 } from '../api/recommendations'
@@ -13,6 +14,7 @@ import RecommendationView from './RecommendationView.vue'
 vi.mock('../api/recommendations', () => ({
   createRecommendation: vi.fn(),
   adjustRecommendation: vi.fn(),
+  createTravelPlan: vi.fn(),
   explainRecommendation: vi.fn(),
 }))
 
@@ -132,6 +134,34 @@ beforeEach(() => {
       },
     ],
   })
+  vi.mocked(createTravelPlan).mockReset().mockResolvedValue({
+    plan_id: 'plan-001',
+    recommendation_session_id: 'session-001',
+    status: 'draft',
+    city: '大理市',
+    check_in: '2026-10-02',
+    check_out: '2026-10-05',
+    guests: 2,
+    provider: 'local',
+    model: 'evidence-template-v1',
+    summary: '这是围绕大理市住宿安排生成的旅行草稿。',
+    days: [
+      {
+        date: '2026-10-02',
+        title: '抵达与入住',
+        items: [
+          {
+            time_label: '全天',
+            activity: '前往已选民宿办理入住',
+            reason: '根据入住日期安排',
+            note: '交通方式待确认',
+          },
+        ],
+      },
+    ],
+    warnings: ['当前为旅行计划草稿。'],
+    created_at: '2026-08-01T04:00:00',
+  })
   vi.mocked(parsePreferences).mockReset().mockResolvedValue(parseResponse)
   vi.mocked(confirmPreferenceParse)
     .mockReset()
@@ -176,6 +206,23 @@ describe('RecommendationView', () => {
     expect(explainRecommendation).toHaveBeenCalledWith('session-001')
     expect(wrapper.text()).toContain('这家民宿的总价在预算内且价格有优势')
     expect(wrapper.text()).toContain('DeepSeek 已生成')
+  })
+
+  it('creates and displays a travel plan draft on demand', async () => {
+    const wrapper = mountView()
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    const planButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('生成旅行计划草稿'))
+    await planButton?.trigger('click')
+    await flushPromises()
+
+    expect(createTravelPlan).toHaveBeenCalledWith('session-001')
+    expect(wrapper.text()).toContain('大理市 行程草稿')
+    expect(wrapper.text()).toContain('抵达与入住')
+    expect(wrapper.text()).toContain('前往已选民宿办理入住')
   })
 
   it('sends selected travel style, facilities and districts', async () => {
