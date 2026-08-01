@@ -1,5 +1,16 @@
 # Stay Scale
 
+## M5 可解释个性化推荐
+
+M5 根据预算、旅行风格、设施和区域偏好，对实时可订候选计算价格、评分、设施、平台覆盖和位置得分，并保存可复查的推荐会话。
+
+```http
+POST /api/v1/recommendations
+GET /api/v1/recommendations/{session_id}
+```
+
+接口可以在 `http://127.0.0.1:8000/docs` 的 `recommendations` 分组验收。详细评分规则见 `docs/modules/M5-explainable-recommendations.md`。
+
 ## M4 平台数据接入与归一化
 
 M4 增加平台适配器、字段归一化、同店匹配和完整导入审计。当前使用本地途家风格演示 JSON，不直接抓取真实平台页面。

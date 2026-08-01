@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from app.modules.ingestion.models import IngestionRecord, ListingMatchRecord
     from app.modules.platforms.models import Platform
     from app.modules.pricing.models import PriceSnapshot
+    from app.modules.recommendations.models import RecommendationResult
 
 
 class CanonicalListing(TimestampMixin, Base):
@@ -55,6 +56,9 @@ class CanonicalListing(TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     match_records: Mapped[list["ListingMatchRecord"]] = relationship(
+        back_populates="canonical_listing"
+    )
+    recommendation_results: Mapped[list["RecommendationResult"]] = relationship(
         back_populates="canonical_listing"
     )
 
