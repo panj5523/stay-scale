@@ -6,6 +6,7 @@ from app.api.v1 import (
     ingestion,
     listings,
     management_review,
+    operations,
     preference_parsing,
     recommendations,
     review_analysis,
@@ -34,3 +35,4 @@ api_router.include_router(
     prefix="/management",
     tags=["management-review"],
 )
+api_router.include_router(operations.router, prefix="/management", tags=["operations"])

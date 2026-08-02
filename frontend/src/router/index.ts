@@ -4,6 +4,7 @@ import AdminLoginView from '../views/AdminLoginView.vue'
 import EnvironmentStatusView from '../views/EnvironmentStatusView.vue'
 import ListingSearchView from '../views/ListingSearchView.vue'
 import ManagementReviewView from '../views/ManagementReviewView.vue'
+import OperationsDashboardView from '../views/OperationsDashboardView.vue'
 import RecommendationView from '../views/RecommendationView.vue'
 
 const router = createRouter({
@@ -23,6 +24,12 @@ const router = createRouter({
       path: '/management/login',
       name: 'admin-login',
       component: AdminLoginView,
+    },
+    {
+      path: '/management/dashboard',
+      name: 'management-dashboard',
+      component: OperationsDashboardView,
+      meta: { requiresAdmin: true },
     },
     {
       path: '/management/reviews',
