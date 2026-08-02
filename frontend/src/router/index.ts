@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import EnvironmentStatusView from '../views/EnvironmentStatusView.vue'
 import ListingSearchView from '../views/ListingSearchView.vue'
+import ManagementReviewView from '../views/ManagementReviewView.vue'
 import RecommendationView from '../views/RecommendationView.vue'
 
 const router = createRouter({
@@ -15,6 +16,11 @@ const router = createRouter({
       path: '/recommendations',
       name: 'recommendations',
       component: RecommendationView,
+    },
+    {
+      path: '/management/reviews',
+      name: 'management-reviews',
+      component: ManagementReviewView,
     },
     {
       path: '/status',

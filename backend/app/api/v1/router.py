@@ -4,6 +4,7 @@ from app.api.v1 import (
     health,
     ingestion,
     listings,
+    management_review,
     preference_parsing,
     recommendations,
     review_analysis,
@@ -26,3 +27,8 @@ api_router.include_router(
 )
 api_router.include_router(travel_plans.router, tags=["travel-plans"])
 api_router.include_router(review_analysis.router, tags=["review-analysis"])
+api_router.include_router(
+    management_review.router,
+    prefix="/management",
+    tags=["management-review"],
+)

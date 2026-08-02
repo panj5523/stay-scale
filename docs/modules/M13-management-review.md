@@ -2,7 +2,7 @@
 
 ## 状态
 
-待设计，暂不开发。
+第一期已完成，待验收。
 
 ## 模块目标
 
@@ -33,6 +33,34 @@ JSON/CSV/授权 API
 - 审核人、审核时间、审核前后值和操作原因审计。
 - 只有审核通过的数据可进入 M2 查询和 M5/M8 推荐。
 
+## 第一期已实现
+
+- `GET /api/v1/management/reviews`：按待处理、已通过、已驳回或全部状态查询审核任务。
+- `POST /api/v1/management/reviews/{record_id}/decision`：通过并关联目标统一民宿，或驳回导入记录。
+- `ingestion_records.review_status`：`not_required`、`pending`、`approved`、`rejected`。
+- `ingestion_review_audits`：保存审核人、原因、前后状态、匹配决策和统一民宿关联变化。
+- Vue 管理页面：`/management/reviews`。
+
+通过审核后，平台房源会关联到目标统一民宿并恢复为 `active`；驳回后平台房源状态为 `rejected`，
+不会进入比价和推荐查询。
+
+## 演示审核任务
+
+Windows 下可以执行：
+
+```powershell
+.\scripts\dev.ps1 data-import-review
+```
+
+该命令导入一条匹配度约 0.67 的待审核记录，不会自动合并到正式民宿。
+管理页面地址：
+
+```text
+http://127.0.0.1:5173/management/reviews
+```
+
+通过演示记录时可使用候选 ID `DL_000001`；驳回时不需要填写目标 ID。
+
 ## 数据来源边界
 
 - 优先接入平台开放接口、联盟接口、商家授权数据和正式合作数据。
@@ -49,7 +77,7 @@ JSON/CSV/授权 API
 
 ## 当前不开发
 
-- 管理员登录和角色权限（M12）。
-- 审核页面和审核接口。
+- 管理员登录和角色权限（后续权限模块）。
+- 批量审核和审核撤销。
 - 自动定时采集和消息队列。
 - 未授权平台网页抓取。

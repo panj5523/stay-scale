@@ -73,6 +73,8 @@ class IngestionRecord(TimestampMixin, Base):
     platform_listing_id: Mapped[int | None] = mapped_column(
         ForeignKey("platform_listings.id", ondelete="SET NULL")
     )
+    review_status: Mapped[str] = mapped_column(String(20), nullable=False, default="not_required")
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime())
 
     batch: Mapped[IngestionBatch] = relationship(back_populates="records")
     platform_listing: Mapped["PlatformListing | None"] = relationship(

@@ -1,0 +1,54 @@
+{
+  "platform": "tujia",
+  "listings": [
+    {
+      "listingId": "TJ-DL-2199",
+      "title": "云栖庭院",
+      "propertyType": "homestay",
+      "description": "用于管理审核演示的待确认平台房源。",
+      "location": {
+        "province": "云南省",
+        "city": "大理市",
+        "district": "大理镇",
+        "address": "才村另一处示范街88号",
+        "latitude": 25.7073,
+        "longitude": 100.1798
+      },
+      "rating": 4.2,
+      "reviewCount": 12,
+      "url": "https://demo.stay-scale.local/tujia/TJ-DL-2199",
+      "capturedAt": "2026-08-02T02:00:00",
+      "amenities": ["WiFi"],
+      "rooms": [
+        {
+          "roomId": "TJ-R-2199-1",
+          "name": "庭院大床房",
+          "areaM2": 28,
+          "bedType": "1张1.8米大床",
+          "bedCount": 1,
+          "maxGuests": 2,
+          "entireUnit": true,
+          "privateBathroom": true,
+          "view": "庭院",
+          "cancellationPolicy": "入住前24小时可免费取消",
+          "prices": [
+            {
+              "checkIn": "2026-10-02",
+              "checkOut": "2026-10-05",
+              "guests": 2,
+              "currency": "CNY",
+              "roomSubtotal": 1200,
+              "cleaningFee": 30,
+              "serviceFee": 20,
+              "total": 1250,
+              "priceType": "standard",
+              "available": true,
+              "remainingUnits": 1,
+              "capturedAt": "2026-08-02T02:00:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

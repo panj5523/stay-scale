@@ -11,6 +11,7 @@ from app.modules.listings.models import (  # noqa: F401
     PlatformListing,
     RoomType,
 )
+from app.modules.management_review.models import IngestionReviewAudit  # noqa: F401
 from app.modules.platforms.models import Platform  # noqa: F401
 from app.modules.preference_parsing.models import PreferenceParseSession  # noqa: F401
 from app.modules.pricing.models import PriceSnapshot  # noqa: F401

@@ -80,6 +80,9 @@ class IngestionService:
                 async with self.session.begin_nested():
                     decision = await self._import_record(platform, ingestion_record, adapter_record)
                 ingestion_record.status = "imported"
+                ingestion_record.review_status = (
+                    "pending" if decision == "review_required" else "not_required"
+                )
                 batch.imported_count += 1
                 decisions[decision] += 1
             except Exception as exc:

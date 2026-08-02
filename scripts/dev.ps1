@@ -1,7 +1,7 @@
 param(
     [ValidateSet(
         "help", "start", "stop", "restart", "status", "logs", "test", "install",
-        "db-migrate", "db-seed", "data-import", "review-import"
+        "db-migrate", "db-seed", "data-import", "data-import-review", "review-import"
     )]
     [string]$Action = "help"
 )
@@ -232,6 +232,20 @@ function Invoke-DemoReviewImport {
     }
 }
 
+function Invoke-ReviewQueueDemoImport {
+    $python = Join-Path $BackendRoot ".venv\Scripts\python.exe"
+    $fixture = Join-Path $BackendRoot "fixtures\ingestion\review-required-demo.json"
+    Write-Step "Importing a review-required listing demo"
+    Push-Location $BackendRoot
+    try {
+        & $python -m app.modules.ingestion.cli --platform tujia --fixture $fixture
+        if ($LASTEXITCODE -ne 0) { throw "Review queue demo import failed." }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 function Stop-RecordedProcess([string]$PidFile, [string]$ExpectedText, [string]$Name) {
     if (-not (Test-Path -LiteralPath $PidFile)) {
         return
@@ -448,6 +462,7 @@ function Show-Help {
     Write-Host "make db-seed     Load or refresh demo data"
     Write-Host "make data-import Import and match the demo platform fixture"
     Write-Host "make review-import Import and analyze the demo review fixture"
+    Write-Host "make data-import-review Create a review-required listing demo"
     Write-Host "`nWithout make, run .\start-dev.cmd or .\stop-dev.cmd."
 }
 
@@ -465,5 +480,6 @@ switch ($Action) {
     "db-seed" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoDataSeed }
     "data-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoPlatformImport }
     "review-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoReviewImport }
+    "data-import-review" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-ReviewQueueDemoImport }
     default { Show-Help }
 }
