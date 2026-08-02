@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { decideReviewTask, getReviewTasks } from '../api/managementReview'
+import { clearAdminSession } from '../auth/session'
 import type { ReviewStatus, ReviewTask } from '../types/managementReview'
 
 type LoadState = 'loading' | 'success' | 'error'
 
 const status = ref<ReviewStatus | 'all'>('pending')
+const router = useRouter()
 const loadState = ref<LoadState>('loading')
 const tasks = ref<ReviewTask[]>([])
 const total = ref(0)
@@ -85,6 +88,11 @@ function formatValue(value: unknown): string {
 }
 
 onMounted(loadTasks)
+
+async function logout() {
+  clearAdminSession()
+  await router.replace('/management/login')
+}
 </script>
 
 <template>
@@ -95,7 +103,7 @@ onMounted(loadTasks)
         <small>INTERNAL · DEVELOPMENT</small>
         <strong>数据审核台</strong>
       </div>
-      <nav><RouterLink to="/">返回比价</RouterLink><RouterLink to="/status">运行状态</RouterLink></nav>
+      <nav><RouterLink to="/">返回比价</RouterLink><button type="button" @click="logout">退出登录</button></nav>
     </header>
 
     <section class="review-hero">
@@ -188,7 +196,7 @@ onMounted(loadTasks)
 .review-header > div { display: flex; flex-direction: column; text-align: center; }
 .review-header small { color: var(--color-accent); font-size: .55rem; letter-spacing: .15em; }
 .review-header nav { display: flex; gap: 18px; justify-content: flex-end; }
-.review-header nav a { color: var(--color-muted); font-size: .72rem; text-decoration: none; }
+.review-header nav a, .review-header nav button { padding: 0; color: var(--color-muted); font-size: .72rem; text-decoration: none; background: transparent; border: 0; }
 .review-hero { display: grid; grid-template-columns: 1fr 230px; gap: 60px; align-items: end; padding: 70px 0 52px; }
 .review-hero p, .queue-heading span, .evidence-heading span { color: var(--color-accent); font-size: .65rem; font-weight: 900; letter-spacing: .16em; }
 .review-hero h1 { max-width: 830px; margin: 12px 0 0; color: var(--color-primary-deep); font-family: 'Noto Serif SC', serif; font-size: clamp(2.5rem, 5vw, 4.8rem); font-weight: 500; line-height: 1.1; }

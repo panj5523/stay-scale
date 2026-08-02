@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-v4-flash"
     ai_timeout_seconds: float = 20.0
+    auth_secret_key: str = "stay-scale-development-secret-change-me"
+    auth_token_expire_minutes: int = 480
+    admin_initial_password: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

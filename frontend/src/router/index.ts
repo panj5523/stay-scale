@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { hasAdminSession } from '../auth/session'
+import AdminLoginView from '../views/AdminLoginView.vue'
 import EnvironmentStatusView from '../views/EnvironmentStatusView.vue'
 import ListingSearchView from '../views/ListingSearchView.vue'
 import ManagementReviewView from '../views/ManagementReviewView.vue'
@@ -18,9 +20,15 @@ const router = createRouter({
       component: RecommendationView,
     },
     {
+      path: '/management/login',
+      name: 'admin-login',
+      component: AdminLoginView,
+    },
+    {
       path: '/management/reviews',
       name: 'management-reviews',
       component: ManagementReviewView,
+      meta: { requiresAdmin: true },
     },
     {
       path: '/status',
@@ -28,6 +36,15 @@ const router = createRouter({
       component: EnvironmentStatusView,
     },
   ],
+})
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAdmin && !hasAdminSession()) {
+    return { name: 'admin-login', query: { redirect: to.fullPath } }
+  }
+  if (to.name === 'admin-login' && hasAdminSession()) {
+    return { name: 'management-reviews' }
+  }
 })
 
 export default router

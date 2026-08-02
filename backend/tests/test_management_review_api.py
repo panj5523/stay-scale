@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.db.session import get_db_session
 from app.main import app
+from app.modules.auth.dependencies import require_admin
 from app.modules.management_review.schemas import (
     ReviewDecisionResponse,
     ReviewQueueResponse,
@@ -16,6 +17,10 @@ from app.modules.management_review.service import ManagementReviewService
 
 async def fake_session() -> AsyncIterator[object]:
     yield object()
+
+
+async def fake_admin() -> object:
+    return object()
 
 
 def _task() -> ReviewTask:
@@ -43,6 +48,7 @@ def test_review_queue_endpoint(monkeypatch) -> None:
 
     monkeypatch.setattr(ManagementReviewService, "list_tasks", fake_list)
     app.dependency_overrides[get_db_session] = fake_session
+    app.dependency_overrides[require_admin] = fake_admin
     try:
         with TestClient(app) as client:
             response = client.get("/api/v1/management/reviews")
@@ -69,6 +75,7 @@ def test_review_decision_endpoint(monkeypatch) -> None:
 
     monkeypatch.setattr(ManagementReviewService, "decide", fake_decide)
     app.dependency_overrides[get_db_session] = fake_session
+    app.dependency_overrides[require_admin] = fake_admin
     try:
         with TestClient(app) as client:
             response = client.post(

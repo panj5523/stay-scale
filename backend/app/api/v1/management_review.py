@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
+from app.modules.auth.dependencies import require_admin
 from app.modules.management_review.schemas import (
     ReviewDecisionRequest,
     ReviewDecisionResponse,
@@ -19,7 +20,11 @@ from app.modules.management_review.service import (
 router = APIRouter()
 
 
-@router.get("/reviews", response_model=ReviewQueueResponse)
+@router.get(
+    "/reviews",
+    response_model=ReviewQueueResponse,
+    dependencies=[Depends(require_admin)],
+)
 async def list_review_tasks(
     params: Annotated[ReviewQueueParams, Query()],
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -27,7 +32,11 @@ async def list_review_tasks(
     return await ManagementReviewService(session).list_tasks(params)
 
 
-@router.post("/reviews/{record_id}/decision", response_model=ReviewDecisionResponse)
+@router.post(
+    "/reviews/{record_id}/decision",
+    response_model=ReviewDecisionResponse,
+    dependencies=[Depends(require_admin)],
+)
 async def decide_review_task(
     record_id: int,
     request: ReviewDecisionRequest,

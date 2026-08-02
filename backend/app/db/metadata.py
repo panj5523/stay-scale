@@ -1,4 +1,5 @@
 from app.db.base import Base
+from app.modules.auth.models import AdminUser  # noqa: F401
 from app.modules.ingestion.models import (  # noqa: F401
     IngestionBatch,
     IngestionRecord,

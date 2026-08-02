@@ -1,7 +1,8 @@
 param(
     [ValidateSet(
         "help", "start", "stop", "restart", "status", "logs", "test", "install",
-        "db-migrate", "db-seed", "data-import", "data-import-review", "review-import"
+        "db-migrate", "db-seed", "data-import", "data-import-review", "review-import",
+        "admin-create"
     )]
     [string]$Action = "help"
 )
@@ -246,6 +247,19 @@ function Invoke-ReviewQueueDemoImport {
     }
 }
 
+function Invoke-AdminCreate {
+    $python = Join-Path $BackendRoot ".venv\Scripts\python.exe"
+    Write-Step "Creating or resetting the administrator account"
+    Push-Location $BackendRoot
+    try {
+        & $python -m app.modules.auth.cli
+        if ($LASTEXITCODE -ne 0) { throw "Administrator creation failed." }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 function Stop-RecordedProcess([string]$PidFile, [string]$ExpectedText, [string]$Name) {
     if (-not (Test-Path -LiteralPath $PidFile)) {
         return
@@ -463,6 +477,7 @@ function Show-Help {
     Write-Host "make data-import Import and match the demo platform fixture"
     Write-Host "make review-import Import and analyze the demo review fixture"
     Write-Host "make data-import-review Create a review-required listing demo"
+    Write-Host "make admin-create Create or reset the administrator account"
     Write-Host "`nWithout make, run .\start-dev.cmd or .\stop-dev.cmd."
 }
 
@@ -481,5 +496,6 @@ switch ($Action) {
     "data-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoPlatformImport }
     "review-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoReviewImport }
     "data-import-review" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-ReviewQueueDemoImport }
+    "admin-create" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-AdminCreate }
     default { Show-Help }
 }
