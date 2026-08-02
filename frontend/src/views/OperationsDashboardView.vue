@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getOperationsDashboard } from '../api/operations'
+import { getDataRetentionReport, getOperationsDashboard } from '../api/operations'
 import { clearAdminSession } from '../auth/session'
-import type { OperationsDashboard } from '../types/operations'
+import type { DataRetentionReport, OperationsDashboard } from '../types/operations'
 
 const router = useRouter()
 const dashboard = ref<OperationsDashboard | null>(null)
+const retention = ref<DataRetentionReport | null>(null)
 const loading = ref(true)
 const error = ref('')
 
@@ -15,6 +16,12 @@ async function loadDashboard() {
   error.value = ''
   try {
     dashboard.value = await getOperationsDashboard()
+    try {
+      retention.value = await getDataRetentionReport()
+    } catch {
+      // Keep the operational dashboard usable when the optional retention report is unavailable.
+      retention.value = null
+    }
   } catch {
     error.value = '看板数据暂时无法读取，请确认管理员登录状态和后端服务。'
   } finally {
@@ -62,6 +69,7 @@ onMounted(loadDashboard)
       </div>
 
       <section class="warning-panel"><span>DATA QUALITY SIGNALS</span><h2>需要关注的事项</h2><p v-if="!dashboard.warnings.length">当前没有待处理警告，数据状态平稳。</p><ul v-else><li v-for="warning in dashboard.warnings" :key="warning">{{ warning }}</li></ul></section>
+      <section v-if="retention" class="warning-panel retention-panel"><span>DATA RETENTION</span><h2>数据保留提醒</h2><p>达到期限待归档：<strong>{{ retention.total_eligible_count }}</strong> 条。此报告只读，不会删除数据。</p><ul><li v-for="item in retention.categories.filter((category) => category.eligible_count > 0)" :key="item.key">{{ item.label }}：{{ item.eligible_count }} 条，截止 {{ item.cutoff_date }}</li><li v-if="!retention.total_eligible_count">当前没有达到保留期限的数据。</li></ul></section>
       <p class="dashboard-note">统计生成于 {{ new Date(dashboard.generated_at).toLocaleString('zh-CN') }} · 看板只读，不会修改业务数据。</p>
     </section>
   </main>

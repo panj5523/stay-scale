@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
+    data_retention,
     health,
     ingestion,
     listings,
@@ -36,3 +37,4 @@ api_router.include_router(
     tags=["management-review"],
 )
 api_router.include_router(operations.router, prefix="/management", tags=["operations"])
+api_router.include_router(data_retention.router, prefix="/management", tags=["data-retention"])

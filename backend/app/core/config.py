@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     auth_secret_key: str = "stay-scale-development-secret-change-me"
     auth_token_expire_minutes: int = 480
     admin_initial_password: str | None = None
+    retention_ingestion_days: int = 180
+    retention_reviews_days: int = 365
+    retention_ai_snapshots_days: int = 180
+    retention_recommendation_days: int = 365
 
     model_config = SettingsConfigDict(
         env_file=".env",

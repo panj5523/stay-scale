@@ -24,4 +24,22 @@ export interface OperationsDashboard {
     total_tokens: number
   }
   warnings: string[]
+  data_retention?: DataRetentionReport
+}
+
+export interface DataRetentionReport {
+  generated_at: string
+  total_eligible_count: number
+  archive_recommended: boolean
+  warnings: string[]
+  categories: Array<{
+    key: string
+    label: string
+    table: string
+    retention_days: number
+    cutoff_date: string
+    total_count: number
+    eligible_count: number
+    archive_recommended: boolean
+  }>
 }
