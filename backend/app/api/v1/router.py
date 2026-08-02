@@ -6,6 +6,7 @@ from app.api.v1 import (
     listings,
     preference_parsing,
     recommendations,
+    review_analysis,
     travel_plans,
 )
 
@@ -24,3 +25,4 @@ api_router.include_router(
     tags=["recommendations"],
 )
 api_router.include_router(travel_plans.router, tags=["travel-plans"])
+api_router.include_router(review_analysis.router, tags=["review-analysis"])
