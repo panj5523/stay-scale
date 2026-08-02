@@ -5,6 +5,8 @@ import pytest
 from app.modules.ai.providers.base import AIProvider
 from app.modules.ai.schemas import AICompletion, AIProviderError
 from app.modules.review_analysis.analyzer import DeepSeekReviewAnalyzer
+from app.modules.review_analysis.schemas import ReviewAnalysisRequest
+from app.modules.review_analysis.service import ReviewAnalysisService
 
 
 class FakeProvider(AIProvider):
@@ -58,3 +60,23 @@ def test_review_analysis_rejects_sentiment_count_mismatch() -> None:
                 [{"content": "房间很干净", "external_id": "1"}]
             )
         )
+
+
+def test_local_review_analysis_produces_valid_internal_topics() -> None:
+    request = ReviewAnalysisRequest.model_validate(
+        {
+            "reviews": [
+                {
+                    "external_id": "review-1",
+                    "platform_code": "meituan",
+                    "content": "房间很干净，位置也很方便",
+                    "rating": 4.8,
+                }
+            ]
+        }
+    )
+
+    result = ReviewAnalysisService._local_analysis(request)
+
+    assert result.topics[0].code == "cleanliness"
+    assert result.sentiment_distribution["positive"] == 1

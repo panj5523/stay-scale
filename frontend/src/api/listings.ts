@@ -3,6 +3,7 @@ import type {
   ListingDetail,
   ListingSearchParams,
   ListingSearchResponse,
+  ReviewAnalysis,
 } from '../types/listings'
 
 function buildSearchParams(params: ListingSearchParams): URLSearchParams {
@@ -22,6 +23,21 @@ function buildSearchParams(params: ListingSearchParams): URLSearchParams {
   if (params.maxPrice !== undefined) query.set('max_price', String(params.maxPrice))
   params.facilities?.forEach((facility) => query.append('facility', facility))
   return query
+}
+
+export async function getLatestReviewAnalysis(publicId: string): Promise<ReviewAnalysis | null> {
+  try {
+    const response = await apiClient.get<ReviewAnalysis>(
+      `/v1/listings/${publicId}/review-analysis/latest`,
+    )
+    return response.data
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error && 'response' in error) {
+      const response = (error as { response?: { status?: number } }).response
+      if (response?.status === 404) return null
+    }
+    throw error
+  }
 }
 
 export async function searchListings(

@@ -88,3 +88,26 @@ export interface ListingDetail {
   facilities: Facility[]
   offers: PlatformOffer[]
 }
+
+export type ReviewSentiment = 'positive' | 'neutral' | 'negative'
+
+export interface ReviewTopic {
+  code: string
+  label: string
+  sentiment: ReviewSentiment
+  mention_count: number
+  evidence: string[]
+}
+
+export interface ReviewAnalysis {
+  analysis_id: string
+  listing_public_id: string
+  review_count: number
+  provider: string
+  model: string
+  summary: string
+  topics: ReviewTopic[]
+  sentiment_distribution: Record<ReviewSentiment, number>
+  warnings: string[]
+  created_at: string
+}

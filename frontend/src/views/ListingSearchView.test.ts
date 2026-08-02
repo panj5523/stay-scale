@@ -1,12 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getListingDetail, searchListings } from '../api/listings'
-import type { ListingDetail, ListingSearchResponse } from '../types/listings'
+import { getLatestReviewAnalysis, getListingDetail, searchListings } from '../api/listings'
+import type { ListingDetail, ListingSearchResponse, ReviewAnalysis } from '../types/listings'
 import ListingSearchView from './ListingSearchView.vue'
 
 vi.mock('../api/listings', () => ({
   searchListings: vi.fn(),
   getListingDetail: vi.fn(),
+  getLatestReviewAnalysis: vi.fn(),
 }))
 
 const searchResponse: ListingSearchResponse = {
@@ -77,6 +78,27 @@ const listingDetail: ListingDetail = {
   ],
 }
 
+const reviewAnalysis: ReviewAnalysis = {
+  analysis_id: 'analysis-001',
+  listing_public_id: 'DL_000001',
+  review_count: 3,
+  provider: 'local',
+  model: 'keyword-v1',
+  summary: '住客普遍认可卫生、位置和服务。',
+  topics: [
+    {
+      code: 'cleanliness',
+      label: '卫生',
+      sentiment: 'positive',
+      mention_count: 2,
+      evidence: ['房间打扫得很干净'],
+    },
+  ],
+  sentiment_distribution: { positive: 2, neutral: 1, negative: 0 },
+  warnings: ['当前为本地关键词初筛。'],
+  created_at: '2026-08-02T02:00:00',
+}
+
 function mountView() {
   return mount(ListingSearchView, {
     global: {
@@ -90,6 +112,7 @@ function mountView() {
 beforeEach(() => {
   vi.mocked(searchListings).mockReset().mockResolvedValue(searchResponse)
   vi.mocked(getListingDetail).mockReset().mockResolvedValue(listingDetail)
+  vi.mocked(getLatestReviewAnalysis).mockReset().mockResolvedValue(reviewAnalysis)
 })
 
 describe('ListingSearchView', () => {
@@ -142,6 +165,9 @@ describe('ListingSearchView', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('美团')
     expect(wrapper.text()).toContain('需美团会员')
+    expect(getLatestReviewAnalysis).toHaveBeenCalledWith('DL_000001')
+    expect(wrapper.text()).toContain('住客都在谈什么')
+    expect(wrapper.text()).toContain('房间打扫得很干净')
   })
 
   it('keeps checkout later than check-in', async () => {

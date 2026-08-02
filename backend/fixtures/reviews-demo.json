@@ -1,0 +1,32 @@
+{
+  "batches": [
+    {
+      "listing_public_id": "DL_000001",
+      "request": {
+        "reviews": [
+          {"external_id": "mt-r-1001", "platform_code": "meituan", "content": "庭院很安静，房间打扫得很干净，房东回复也很及时。", "rating": 4.9, "review_date": "2026-07-18"},
+          {"external_id": "tj-r-2101", "platform_code": "tujia", "content": "位置方便，去周边吃饭很轻松，热水和无线网络都稳定。", "rating": 4.8, "review_date": "2026-07-12"},
+          {"external_id": "mn-r-3101", "platform_code": "muniao", "content": "房间整洁，晚上比较安静，整体入住体验不错。", "rating": 4.7, "review_date": "2026-06-29"}
+        ]
+      }
+    },
+    {
+      "listing_public_id": "DL_000002",
+      "request": {
+        "reviews": [
+          {"external_id": "mt-r-1002", "platform_code": "meituan", "content": "房间干净，位置靠近古城，出行比较方便。", "rating": 4.7, "review_date": "2026-07-20"},
+          {"external_id": "tj-r-2102", "platform_code": "tujia", "content": "房东沟通很顺畅，不过临街房间晚上稍微有点吵。", "rating": 4.1, "review_date": "2026-07-03"}
+        ]
+      }
+    },
+    {
+      "listing_public_id": "DL_000003",
+      "request": {
+        "reviews": [
+          {"external_id": "tj-r-2103", "platform_code": "tujia", "content": "窗外景观很好，房间很干净，服务也很热情。", "rating": 4.9, "review_date": "2026-07-21"},
+          {"external_id": "mn-r-3103", "platform_code": "muniao", "content": "位置不错，周边环境安静，但交通方式需要提前确认。", "rating": 4.6, "review_date": "2026-07-08"}
+        ]
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 param(
     [ValidateSet(
         "help", "start", "stop", "restart", "status", "logs", "test", "install",
-        "db-migrate", "db-seed", "data-import"
+        "db-migrate", "db-seed", "data-import", "review-import"
     )]
     [string]$Action = "help"
 )
@@ -212,6 +212,20 @@ function Invoke-DemoPlatformImport {
     try {
         & $python -m app.modules.ingestion.cli --platform tujia --fixture $fixture
         if ($LASTEXITCODE -ne 0) { throw "Demo platform data import failed." }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Invoke-DemoReviewImport {
+    $python = Join-Path $BackendRoot ".venv\Scripts\python.exe"
+    $fixture = Join-Path $BackendRoot "fixtures\reviews-demo.json"
+    Write-Step "Importing and analyzing normalized demo reviews"
+    Push-Location $BackendRoot
+    try {
+        & $python -m app.modules.review_analysis.cli --fixture $fixture
+        if ($LASTEXITCODE -ne 0) { throw "Demo review import failed." }
     }
     finally {
         Pop-Location
@@ -433,6 +447,7 @@ function Show-Help {
     Write-Host "make db-migrate  Apply pending MySQL migrations"
     Write-Host "make db-seed     Load or refresh demo data"
     Write-Host "make data-import Import and match the demo platform fixture"
+    Write-Host "make review-import Import and analyze the demo review fixture"
     Write-Host "`nWithout make, run .\start-dev.cmd or .\stop-dev.cmd."
 }
 
@@ -449,5 +464,6 @@ switch ($Action) {
     "db-migrate" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration }
     "db-seed" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoDataSeed }
     "data-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoPlatformImport }
+    "review-import" { Ensure-RuntimeDirectory; Ensure-Dependencies; Start-Infrastructure; Invoke-DatabaseMigration; Invoke-DemoReviewImport }
     default { Show-Help }
 }

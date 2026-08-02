@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
-import type { ListingDetail } from '../types/listings'
+import type { ListingDetail, ReviewAnalysis, ReviewSentiment } from '../types/listings'
 import { formatCurrency, formatShortDate, stayNights } from '../utils/format'
 
 const props = defineProps<{
@@ -9,6 +9,8 @@ const props = defineProps<{
   error: string
   checkIn: string
   checkOut: string
+  reviewAnalysis: ReviewAnalysis | null
+  reviewAnalysisError: string
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +18,20 @@ const emit = defineEmits<{
 }>()
 
 const nights = computed(() => stayNights(props.checkIn, props.checkOut))
+const sentimentLabels: Record<ReviewSentiment, string> = {
+  positive: '正面',
+  neutral: '中性',
+  negative: '负面',
+}
+
+function sentimentPercent(sentiment: ReviewSentiment): number {
+  if (!props.reviewAnalysis?.review_count) return 0
+  return Math.round(
+    ((props.reviewAnalysis.sentiment_distribution[sentiment] ?? 0) /
+      props.reviewAnalysis.review_count) *
+      100,
+  )
+}
 
 function closeOnEscape(event: KeyboardEvent) {
   if (event.key === 'Escape') emit('close')
@@ -113,6 +129,44 @@ onBeforeUnmount(() => {
           <strong>当前条件下暂无报价</strong>
           <p>可以调整日期或入住人数后重新查询。</p>
         </div>
+
+        <section class="review-insight" aria-labelledby="review-insight-title">
+          <div class="review-heading">
+            <div>
+              <span>REVIEW SIGNALS · AI ASSISTED</span>
+              <h3 id="review-insight-title">住客都在谈什么</h3>
+            </div>
+            <small v-if="reviewAnalysis">{{ reviewAnalysis.review_count }} 条评论样本</small>
+          </div>
+
+          <p v-if="reviewAnalysisError" class="review-empty">{{ reviewAnalysisError }}</p>
+          <p v-else-if="!reviewAnalysis" class="review-empty">
+            暂无已审核的评论分析。导入平台评论后，这里会展示主题、情绪和原文证据。
+          </p>
+          <template v-else>
+            <p class="review-summary">{{ reviewAnalysis.summary }}</p>
+            <div class="sentiment-grid">
+              <div v-for="sentiment in (['positive', 'neutral', 'negative'] as ReviewSentiment[])" :key="sentiment">
+                <span>{{ sentimentLabels[sentiment] }}</span>
+                <strong>{{ sentimentPercent(sentiment) }}%</strong>
+                <i><b :class="sentiment" :style="{ width: `${sentimentPercent(sentiment)}%` }"></b></i>
+              </div>
+            </div>
+            <div class="topic-grid">
+              <article v-for="topic in reviewAnalysis.topics" :key="`${topic.code}-${topic.sentiment}`">
+                <div>
+                  <strong>{{ topic.label }}</strong>
+                  <span :class="`sentiment-${topic.sentiment}`">{{ sentimentLabels[topic.sentiment] }}</span>
+                  <small>提及 {{ topic.mention_count }} 次</small>
+                </div>
+                <blockquote v-for="evidence in topic.evidence" :key="evidence">“{{ evidence }}”</blockquote>
+              </article>
+            </div>
+            <p v-for="warning in reviewAnalysis.warnings" :key="warning" class="review-warning">
+              {{ warning }}
+            </p>
+          </template>
+        </section>
 
         <footer class="drawer-footer">
           <p>价格来自项目演示数据，实际预订前请以平台结算页为准。</p>
@@ -231,6 +285,34 @@ h2 {
   gap: 12px;
   padding: 0 42px 36px;
 }
+
+.review-insight { padding: 30px 42px; margin: 0 42px 36px; background: rgb(36 90 80 / 5%); border: 1px solid rgb(36 90 80 / 13%); border-radius: 18px; }
+.review-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.review-heading span { color: var(--color-accent); font-size: .62rem; font-weight: 900; letter-spacing: .14em; }
+.review-heading h3 { margin: 7px 0 0; color: var(--color-primary-deep); font-family: 'Noto Serif SC', serif; font-size: 1.45rem; }
+.review-heading small { color: var(--color-muted); }
+.review-summary { margin: 18px 0; color: var(--color-primary-deep); font-size: .82rem; line-height: 1.7; }
+.review-empty { margin: 20px 0 0; color: var(--color-muted); font-size: .78rem; line-height: 1.7; }
+.sentiment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sentiment-grid > div { display: grid; grid-template-columns: 1fr auto; gap: 7px; padding: 12px; background: var(--color-surface); border-radius: 10px; }
+.sentiment-grid span { color: var(--color-muted); font-size: .68rem; }
+.sentiment-grid strong { color: var(--color-primary-deep); font-family: Georgia, serif; }
+.sentiment-grid i { grid-column: 1 / -1; height: 4px; overflow: hidden; background: var(--color-border); border-radius: 4px; }
+.sentiment-grid b { display: block; height: 100%; border-radius: inherit; }
+.sentiment-grid b.positive { background: var(--color-success); }
+.sentiment-grid b.neutral { background: #b79b68; }
+.sentiment-grid b.negative { background: var(--color-danger); }
+.topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.topic-grid article { padding: 14px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 11px; }
+.topic-grid article > div { display: flex; gap: 8px; align-items: center; }
+.topic-grid strong { color: var(--color-primary-deep); font-size: .8rem; }
+.topic-grid span { padding: 3px 6px; font-size: .58rem; border-radius: 999px; }
+.sentiment-positive { color: var(--color-success); background: rgb(50 125 93 / 9%); }
+.sentiment-neutral { color: #8b6d39; background: rgb(183 155 104 / 13%); }
+.sentiment-negative { color: var(--color-danger); background: rgb(170 70 58 / 9%); }
+.topic-grid small { margin-left: auto; color: var(--color-muted); font-size: .6rem; }
+.topic-grid blockquote { margin: 9px 0 0; color: var(--color-muted); font-size: .68rem; line-height: 1.55; }
+.review-warning { margin: 14px 0 0; color: var(--color-muted); font-size: .64rem; }
 
 .offer-card {
   position: relative;

@@ -10,6 +10,7 @@ from app.modules.ai.schemas import AIProviderError
 from app.modules.listings.models import CanonicalListing
 from app.modules.review_analysis.analyzer import (
     AIReviewAnalysisPayload,
+    AIReviewTopic,
     DeepSeekReviewAnalyzer,
 )
 from app.modules.review_analysis.models import ListingReview, ReviewAnalysisSnapshot
@@ -52,6 +53,19 @@ class ReviewAnalysisService:
                     source_url=review.source_url,
                 )
             )
+
+        if duplicate_count == len(request.reviews):
+            existing_snapshot = await self.session.scalar(
+                select(ReviewAnalysisSnapshot)
+                .where(ReviewAnalysisSnapshot.canonical_listing_id == listing.id)
+                .order_by(
+                    ReviewAnalysisSnapshot.created_at.desc(),
+                    ReviewAnalysisSnapshot.id.desc(),
+                )
+                .limit(1)
+            )
+            if existing_snapshot:
+                return self._response(existing_snapshot, listing_public_id)
 
         analyzer = self._configured_analyzer()
         error_code = None
@@ -100,6 +114,20 @@ class ReviewAnalysisService:
         await self.session.commit()
         return self._response(snapshot, listing_public_id)
 
+    async def get_latest(self, listing_public_id: str) -> ReviewAnalysisResponse | None:
+        listing = await self.session.scalar(
+            select(CanonicalListing).where(CanonicalListing.public_id == listing_public_id)
+        )
+        if listing is None:
+            return None
+        snapshot = await self.session.scalar(
+            select(ReviewAnalysisSnapshot)
+            .where(ReviewAnalysisSnapshot.canonical_listing_id == listing.id)
+            .order_by(ReviewAnalysisSnapshot.created_at.desc(), ReviewAnalysisSnapshot.id.desc())
+            .limit(1)
+        )
+        return self._response(snapshot, listing_public_id) if snapshot else None
+
     @staticmethod
     def _configured_analyzer() -> DeepSeekReviewAnalyzer | None:
         if not settings.deepseek_enabled or not settings.deepseek_api_key:
@@ -142,7 +170,7 @@ class ReviewAnalysisService:
                         else "positive"
                     )
                     topics.append(
-                        ReviewTopic(
+                        AIReviewTopic(
                             code=code,
                             label=label,
                             sentiment=sentiment,

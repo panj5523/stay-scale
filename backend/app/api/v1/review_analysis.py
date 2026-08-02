@@ -10,6 +10,20 @@ from app.modules.review_analysis.service import ReviewAnalysisService
 router = APIRouter()
 
 
+@router.get(
+    "/listings/{listing_id}/review-analysis/latest",
+    response_model=ReviewAnalysisResponse,
+)
+async def get_latest_listing_review_analysis(
+    listing_id: str,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ReviewAnalysisResponse:
+    result = await ReviewAnalysisService(session).get_latest(listing_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Review analysis not found")
+    return result
+
+
 @router.post(
     "/listings/{listing_id}/review-analysis",
     response_model=ReviewAnalysisResponse,

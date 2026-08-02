@@ -49,3 +49,30 @@ def test_review_analysis_endpoint_returns_snapshot(monkeypatch) -> None:
 
     assert response.status_code == 201
     assert response.json()["provider"] == "local"
+
+
+def test_latest_review_analysis_endpoint(monkeypatch) -> None:
+    async def fake_get_latest(_service, listing_id):
+        return ReviewAnalysisResponse(
+            analysis_id="analysis-latest",
+            listing_public_id=listing_id,
+            review_count=3,
+            provider="deepseek",
+            model="deepseek-v4-flash",
+            summary="住客普遍认可卫生和服务表现。",
+            topics=[],
+            sentiment_distribution={"positive": 2, "neutral": 1, "negative": 0},
+            warnings=[],
+            created_at=datetime(2026, 8, 2, 2, 0, 0),
+        )
+
+    monkeypatch.setattr(ReviewAnalysisService, "get_latest", fake_get_latest)
+    app.dependency_overrides[get_db_session] = fake_session
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/listings/DL_000001/review-analysis/latest")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["analysis_id"] == "analysis-latest"

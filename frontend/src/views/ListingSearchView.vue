@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { getListingDetail, searchListings } from '../api/listings'
+import { getLatestReviewAnalysis, getListingDetail, searchListings } from '../api/listings'
 import ListingCard from '../components/ListingCard.vue'
 import OfferDrawer from '../components/OfferDrawer.vue'
 import type {
@@ -9,6 +9,7 @@ import type {
   ListingSearchResponse,
   ListingSort,
   ListingSummary,
+  ReviewAnalysis,
 } from '../types/listings'
 import { formatShortDate, nextDateValue, stayNights } from '../utils/format'
 
@@ -47,6 +48,8 @@ const drawerOpen = ref(false)
 const detail = ref<ListingDetail | null>(null)
 const detailLoading = ref(false)
 const detailError = ref('')
+const reviewAnalysis = ref<ReviewAnalysis | null>(null)
+const reviewAnalysisError = ref('')
 
 const nights = computed(() =>
   stayNights(appliedSearch.value.checkIn, appliedSearch.value.checkOut),
@@ -118,10 +121,20 @@ async function openComparison(listing: ListingSummary) {
   drawerOpen.value = true
   detail.value = null
   detailError.value = ''
+  reviewAnalysis.value = null
+  reviewAnalysisError.value = ''
   detailLoading.value = true
 
   try {
-    detail.value = await getListingDetail(listing.public_id, appliedSearch.value)
+    const [listingDetail, analysis] = await Promise.all([
+      getListingDetail(listing.public_id, appliedSearch.value),
+      getLatestReviewAnalysis(listing.public_id).catch(() => {
+        reviewAnalysisError.value = '评论分析暂时无法读取。'
+        return null
+      }),
+    ])
+    detail.value = listingDetail
+    reviewAnalysis.value = analysis
   } catch {
     detailError.value = '平台报价读取失败，请关闭后重新尝试。'
   } finally {
@@ -288,15 +301,17 @@ onMounted(runSearch)
 
     <footer class="site-footer">
       <div><span class="brand-mark small">S</span><strong>Stay Scale</strong></div>
-      <p>演示价格不用于真实预订 · M3 前端查询与比价模块</p>
+      <p>演示价格和评论不用于真实预订 · M14 评论洞察与跨平台比价</p>
       <RouterLink to="/status">检查服务状态 →</RouterLink>
     </footer>
 
-    <OfferDrawer
+      <OfferDrawer
       v-if="drawerOpen"
       :detail="detail"
       :loading="detailLoading"
-      :error="detailError"
+        :error="detailError"
+        :review-analysis="reviewAnalysis"
+        :review-analysis-error="reviewAnalysisError"
       :check-in="appliedSearch.checkIn"
       :check-out="appliedSearch.checkOut"
       @close="drawerOpen = false"
