@@ -47,7 +47,9 @@ class RecommendationService:
         self.feedback = RecommendationFeedbackInterpreter()
         self.ai_explainer = ai_explainer or self._configured_ai_explainer()
 
-    async def recommend(self, request: RecommendationRequest) -> RecommendationResponse:
+    async def recommend(
+        self, request: RecommendationRequest, user_id: int | None = None
+    ) -> RecommendationResponse:
         rows, _ = await self.listings.search(
             ListingSearchParams(
                 city=request.city,
@@ -76,6 +78,7 @@ class RecommendationService:
         generated_at = datetime.now(UTC).replace(tzinfo=None)
         recommendation_session = RecommendationSession(
             public_id=str(uuid4()),
+            user_id=user_id,
             city=request.city,
             check_in=request.check_in,
             check_out=request.check_out,
@@ -118,6 +121,26 @@ class RecommendationService:
             explanation_model=recommendation_session.explanation_model,
             explanation_warning=self._explanation_warning(recommendation_session),
         )
+
+    async def history(self, user_id: int) -> list[RecommendationResponse]:
+        sessions = (
+            (
+                await self.session.execute(
+                    select(RecommendationSession)
+                    .where(RecommendationSession.user_id == user_id)
+                    .order_by(RecommendationSession.created_at.desc())
+                    .limit(50)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        history = []
+        for item in sessions:
+            response = await self.get(item.public_id)
+            if response is not None:
+                history.append(response)
+        return history
 
     async def explain(self, public_id: str) -> RecommendationResponse | None:
         recommendation_session = await self.session.scalar(

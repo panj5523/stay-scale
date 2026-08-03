@@ -103,7 +103,7 @@ async function logout() {
         <small>INTERNAL · DEVELOPMENT</small>
         <strong>数据审核台</strong>
       </div>
-      <nav><RouterLink to="/management/dashboard">运营看板</RouterLink><RouterLink to="/">返回比价</RouterLink><button type="button" @click="logout">退出登录</button></nav>
+      <nav><RouterLink to="/management/dashboard">运营看板</RouterLink><RouterLink to="/management/restore-requests">恢复审批</RouterLink><RouterLink to="/">返回比价</RouterLink><button type="button" @click="logout">退出登录</button></nav>
     </header>
 
     <section class="review-hero">

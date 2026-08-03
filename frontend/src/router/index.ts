@@ -1,11 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { hasAdminSession } from '../auth/session'
 import AdminLoginView from '../views/AdminLoginView.vue'
+import ComparisonView from '../views/ComparisonView.vue'
 import EnvironmentStatusView from '../views/EnvironmentStatusView.vue'
 import ListingSearchView from '../views/ListingSearchView.vue'
 import ManagementReviewView from '../views/ManagementReviewView.vue'
 import OperationsDashboardView from '../views/OperationsDashboardView.vue'
 import RecommendationView from '../views/RecommendationView.vue'
+import RestoreApprovalView from '../views/RestoreApprovalView.vue'
+import UserAccountView from '../views/UserAccountView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -19,6 +22,16 @@ const router = createRouter({
       path: '/recommendations',
       name: 'recommendations',
       component: RecommendationView,
+    },
+    {
+      path: '/account',
+      name: 'user-account',
+      component: UserAccountView,
+    },
+    {
+      path: '/compare',
+      name: 'comparison',
+      component: ComparisonView,
     },
     {
       path: '/management/login',
@@ -35,6 +48,12 @@ const router = createRouter({
       path: '/management/reviews',
       name: 'management-reviews',
       component: ManagementReviewView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/management/restore-requests',
+      name: 'management-restore-requests',
+      component: RestoreApprovalView,
       meta: { requiresAdmin: true },
     },
     {

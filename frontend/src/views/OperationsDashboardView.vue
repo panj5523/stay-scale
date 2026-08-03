@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getDataRetentionReport, getOperationsDashboard } from '../api/operations'
+import { createDataRetentionArchive, downloadDataRetentionArchive, getDataRetentionReport, getOperationsDashboard, listDataRetentionArchives, planDataRetentionRestore, previewDataRetentionRestore, verifyDataRetentionArchive } from '../api/operations'
 import { clearAdminSession } from '../auth/session'
-import type { DataRetentionReport, OperationsDashboard } from '../types/operations'
+import type { ArchiveFileInfo, DataRetentionReport, OperationsDashboard } from '../types/operations'
 
 const router = useRouter()
 const dashboard = ref<OperationsDashboard | null>(null)
 const retention = ref<DataRetentionReport | null>(null)
+const archiveMessage = ref('')
+const archives = ref<ArchiveFileInfo[]>([])
 const loading = ref(true)
 const error = ref('')
 
@@ -18,6 +20,7 @@ async function loadDashboard() {
     dashboard.value = await getOperationsDashboard()
     try {
       retention.value = await getDataRetentionReport()
+      archives.value = await listDataRetentionArchives()
     } catch {
       // Keep the operational dashboard usable when the optional retention report is unavailable.
       retention.value = null
@@ -34,6 +37,35 @@ async function logout() {
   await router.replace('/management/login')
 }
 
+async function archiveRetentionData() {
+  if (!retention.value?.total_eligible_count || !window.confirm('确认生成归档包？热表数据不会删除。')) return
+  archiveMessage.value = '归档包生成中…'
+  try {
+    const archive = await createDataRetentionArchive()
+    archiveMessage.value = `已生成 ${archive.file_name}，SHA-256：${archive.sha256.slice(0, 12)}…`
+    archives.value = await listDataRetentionArchives()
+  } catch {
+    archiveMessage.value = '归档包生成失败，请稍后重试。'
+  }
+}
+
+async function verifyArchive(item: ArchiveFileInfo) {
+  const verified = await verifyDataRetentionArchive(item.archive_id)
+  archives.value = archives.value.map((archive) => archive.archive_id === verified.archive_id ? verified : archive)
+}
+
+async function previewRestore(item: ArchiveFileInfo) {
+  const preview = await previewDataRetentionRestore(item.archive_id)
+  archiveMessage.value = `${item.file_name} 恢复预览：${preview.total_records} 条记录，未执行写入。`
+}
+
+async function planRestore(item: ArchiveFileInfo) {
+  const plan = await planDataRetentionRestore(item.archive_id)
+  archiveMessage.value = plan.can_restore_safely
+    ? `恢复计划可执行：${plan.total_insert_candidates} 条可新增，尚未写入。`
+    : `恢复计划被阻断：${plan.total_conflicts} 条主键冲突，尚未写入。`
+}
+
 function coverageWidth(count: number): string {
   const max = Math.max(...(dashboard.value?.listing_quality.platform_coverage.map((item) => item.active_listing_count) ?? [1]))
   return `${Math.round((count / Math.max(max, 1)) * 100)}%`
@@ -46,7 +78,7 @@ onMounted(loadDashboard)
   <main class="dashboard-page">
     <header class="dashboard-header">
       <RouterLink class="brand" to="/"><span>S</span><strong>Stay Scale</strong></RouterLink>
-      <nav><RouterLink to="/management/reviews">审核队列</RouterLink><button type="button" @click="logout">退出登录</button></nav>
+      <nav><RouterLink to="/management/reviews">审核队列</RouterLink><RouterLink to="/management/restore-requests">恢复审批</RouterLink><RouterLink to="/">普通页面</RouterLink><button type="button" @click="logout">退出登录</button></nav>
     </header>
 
     <section class="dashboard-hero">
@@ -70,6 +102,8 @@ onMounted(loadDashboard)
 
       <section class="warning-panel"><span>DATA QUALITY SIGNALS</span><h2>需要关注的事项</h2><p v-if="!dashboard.warnings.length">当前没有待处理警告，数据状态平稳。</p><ul v-else><li v-for="warning in dashboard.warnings" :key="warning">{{ warning }}</li></ul></section>
       <section v-if="retention" class="warning-panel retention-panel"><span>DATA RETENTION</span><h2>数据保留提醒</h2><p>达到期限待归档：<strong>{{ retention.total_eligible_count }}</strong> 条。此报告只读，不会删除数据。</p><ul><li v-for="item in retention.categories.filter((category) => category.eligible_count > 0)" :key="item.key">{{ item.label }}：{{ item.eligible_count }} 条，截止 {{ item.cutoff_date }}</li><li v-if="!retention.total_eligible_count">当前没有达到保留期限的数据。</li></ul></section>
+      <section v-if="retention" class="warning-panel"><span>RECOVERABLE ARCHIVE</span><h2>生成可恢复归档包</h2><p>导出 JSONL 压缩包供离线保存，系统不会删除热表数据。</p><button type="button" :disabled="!retention.total_eligible_count" @click="archiveRetentionData">确认生成归档包</button><small v-if="archiveMessage">{{ archiveMessage }}</small></section>
+      <section v-if="retention" class="warning-panel"><span>ARCHIVE REGISTRY</span><h2>归档包管理</h2><p v-if="!archives.length">尚未生成归档包。</p><ul v-else><li v-for="item in archives" :key="item.archive_id"><strong>{{ item.file_name }}</strong> · {{ (item.size_bytes / 1024).toFixed(1) }} KB · {{ item.integrity_status === 'valid' ? '校验通过' : item.integrity_status === 'invalid' ? '文件损坏' : '未校验' }} <button type="button" @click="verifyArchive(item)">校验</button> <button type="button" @click="previewRestore(item)">恢复预览</button> <button type="button" @click="planRestore(item)">冲突分析</button> <button type="button" @click="downloadDataRetentionArchive(item)">下载</button></li></ul></section>
       <p class="dashboard-note">统计生成于 {{ new Date(dashboard.generated_at).toLocaleString('zh-CN') }} · 看板只读，不会修改业务数据。</p>
     </section>
   </main>

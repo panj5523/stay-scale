@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     retention_reviews_days: int = 365
     retention_ai_snapshots_days: int = 180
     retention_recommendation_days: int = 365
+    archive_output_dir: str = ".runtime/archives"
+    archive_max_records_per_table: int = 10000
 
     model_config = SettingsConfigDict(
         env_file=".env",

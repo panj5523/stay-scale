@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLatestReviewAnalysis, getListingDetail, searchListings } from '../api/listings'
+import { addUserFavorite, getUserFavorites, removeUserFavorite } from '../api/users'
 import type { ListingDetail, ListingSearchResponse, ReviewAnalysis } from '../types/listings'
 import ListingSearchView from './ListingSearchView.vue'
 
@@ -8,6 +9,12 @@ vi.mock('../api/listings', () => ({
   searchListings: vi.fn(),
   getListingDetail: vi.fn(),
   getLatestReviewAnalysis: vi.fn(),
+}))
+
+vi.mock('../api/users', () => ({
+  addUserFavorite: vi.fn(),
+  getUserFavorites: vi.fn(),
+  removeUserFavorite: vi.fn(),
 }))
 
 const searchResponse: ListingSearchResponse = {
@@ -110,9 +117,19 @@ function mountView() {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   vi.mocked(searchListings).mockReset().mockResolvedValue(searchResponse)
   vi.mocked(getListingDetail).mockReset().mockResolvedValue(listingDetail)
   vi.mocked(getLatestReviewAnalysis).mockReset().mockResolvedValue(reviewAnalysis)
+  vi.mocked(getUserFavorites).mockReset().mockResolvedValue([])
+  vi.mocked(addUserFavorite).mockReset().mockResolvedValue({
+    listing_public_id: 'DL_000001',
+    name: searchResponse.items[0].name,
+    city: searchResponse.items[0].city,
+    district: searchResponse.items[0].district,
+    created_at: '2026-08-03T08:00:00',
+  })
+  vi.mocked(removeUserFavorite).mockReset().mockResolvedValue(undefined)
 })
 
 describe('ListingSearchView', () => {
@@ -154,7 +171,7 @@ describe('ListingSearchView', () => {
 
     const compareButton = wrapper
       .findAll('button')
-      .find((button) => button.text().includes('比较平台报价'))
+      .find((button) => button.text().includes('查看平台报价'))
     await compareButton?.trigger('click')
     await flushPromises()
 
@@ -180,5 +197,89 @@ describe('ListingSearchView', () => {
 
     expect(checkOut.attributes('min')).toBe('2026-10-07')
     expect((checkOut.element as HTMLInputElement).value).toBe('2026-10-07')
+  })
+
+  it('adds and removes a listing from the comparison shortlist', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    const comparisonButton = wrapper.find('.compare-list-button')
+
+    await comparisonButton.trigger('click')
+
+    expect(comparisonButton.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.text()).toContain('加入比较清单')
+    expect(JSON.parse(localStorage.getItem('stay_scale_comparisons') ?? '[]')).toHaveLength(1)
+
+    await comparisonButton.trigger('click')
+
+    expect(comparisonButton.attributes('aria-pressed')).toBe('false')
+    expect(JSON.parse(localStorage.getItem('stay_scale_comparisons') ?? '[]')).toHaveLength(0)
+  })
+
+  it('guides a signed-out user to log in before saving a favorite', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('.favorite-button').trigger('click')
+
+    expect(addUserFavorite).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('登录后即可收藏房源')
+    expect(wrapper.text()).toContain('前往登录')
+  })
+
+  it('loads and removes an existing favorite for a signed-in user', async () => {
+    localStorage.setItem('stay_scale_user_token', 'user-token')
+    vi.mocked(getUserFavorites).mockResolvedValue([
+      {
+        listing_public_id: 'DL_000001',
+        name: searchResponse.items[0].name,
+        city: searchResponse.items[0].city,
+        district: searchResponse.items[0].district,
+        created_at: '2026-08-03T08:00:00',
+      },
+    ])
+
+    const wrapper = mountView()
+    await flushPromises()
+    const favoriteButton = wrapper.find('.favorite-button')
+
+    expect(getUserFavorites).toHaveBeenCalledOnce()
+    expect(favoriteButton.attributes('aria-pressed')).toBe('true')
+
+    await favoriteButton.trigger('click')
+    await flushPromises()
+
+    expect(removeUserFavorite).toHaveBeenCalledWith('DL_000001')
+    expect(favoriteButton.attributes('aria-pressed')).toBe('false')
+    expect(wrapper.text()).toContain('已取消收藏')
+  })
+
+  it('adds a new favorite for a signed-in user', async () => {
+    localStorage.setItem('stay_scale_user_token', 'user-token')
+    const wrapper = mountView()
+    await flushPromises()
+    const favoriteButton = wrapper.find('.favorite-button')
+
+    await favoriteButton.trigger('click')
+    await flushPromises()
+
+    expect(addUserFavorite).toHaveBeenCalledWith('DL_000001')
+    expect(favoriteButton.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.text()).toContain('已收藏')
+  })
+
+  it('keeps the original state when saving a favorite fails', async () => {
+    localStorage.setItem('stay_scale_user_token', 'user-token')
+    vi.mocked(addUserFavorite).mockRejectedValue(new Error('network unavailable'))
+    const wrapper = mountView()
+    await flushPromises()
+    const favoriteButton = wrapper.find('.favorite-button')
+
+    await favoriteButton.trigger('click')
+    await flushPromises()
+
+    expect(favoriteButton.attributes('aria-pressed')).toBe('false')
+    expect(favoriteButton.attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).toContain('收藏操作没有完成')
   })
 })

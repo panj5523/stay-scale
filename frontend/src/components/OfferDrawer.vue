@@ -185,7 +185,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   padding-left: 24px;
-  background: rgb(20 36 32 / 48%);
+  background: rgb(10 28 47 / 48%);
   backdrop-filter: blur(5px);
   animation: veil-in 220ms ease-out;
 }
@@ -195,9 +195,9 @@ onBeforeUnmount(() => {
   height: 100%;
   overflow-y: auto;
   background:
-    linear-gradient(90deg, rgb(36 90 80 / 5%) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(90deg, rgb(46 111 149 / 5%) 1px, transparent 1px) 0 0 / 64px 64px,
     var(--color-surface);
-  box-shadow: -24px 0 80px rgb(20 36 32 / 22%);
+  box-shadow: -24px 0 80px rgb(10 28 47 / 24%);
   animation: drawer-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   justify-content: space-between;
   padding: 34px 42px 28px;
-  background: rgb(255 252 246 / 92%);
+  background: rgb(255 253 248 / 94%);
   border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(15px);
 }
@@ -276,7 +276,7 @@ h2 {
 .offer-count {
   flex: 0 0 auto;
   padding: 7px 11px;
-  background: rgb(36 90 80 / 8%);
+  background: rgb(46 111 149 / 8%);
   border-radius: 999px;
 }
 
@@ -286,7 +286,7 @@ h2 {
   padding: 0 42px 36px;
 }
 
-.review-insight { padding: 30px 42px; margin: 0 42px 36px; background: rgb(36 90 80 / 5%); border: 1px solid rgb(36 90 80 / 13%); border-radius: 18px; }
+.review-insight { padding: 30px 42px; margin: 0 42px 36px; background: rgb(221 236 232 / 36%); border: 1px solid rgb(46 111 149 / 13%); border-radius: 18px; }
 .review-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
 .review-heading span { color: var(--color-accent); font-size: .62rem; font-weight: 900; letter-spacing: .14em; }
 .review-heading h3 { margin: 7px 0 0; color: var(--color-primary-deep); font-family: 'Noto Serif SC', serif; font-size: 1.45rem; }
@@ -322,15 +322,15 @@ h2 {
   align-items: center;
   padding: 24px 22px 24px 54px;
   overflow: hidden;
-  background: rgb(245 240 230 / 76%);
+  background: rgb(238 247 247 / 72%);
   border: 1px solid transparent;
   border-radius: 16px;
 }
 
 .offer-card:first-child {
-  background: rgb(255 252 246 / 95%);
-  border-color: rgb(216 107 61 / 42%);
-  box-shadow: 0 14px 34px rgb(36 90 80 / 8%);
+  background: rgb(255 253 248 / 96%);
+  border-color: rgb(226 109 90 / 42%);
+  box-shadow: 0 14px 34px rgb(22 50 79 / 10%);
 }
 
 .offer-rank {
@@ -340,10 +340,10 @@ h2 {
   left: 0;
   display: grid;
   width: 34px;
-  color: rgb(36 90 80 / 35%);
+  color: rgb(22 50 79 / 35%);
   font-family: Georgia, serif;
   font-size: 0.75rem;
-  background: rgb(36 90 80 / 6%);
+  background: rgb(46 111 149 / 6%);
   place-items: center;
   writing-mode: vertical-rl;
 }
@@ -409,7 +409,7 @@ h2 {
   color: var(--color-accent);
   font-size: 0.62rem;
   font-weight: 800;
-  background: rgb(216 107 61 / 9%);
+  background: rgb(226 109 90 / 10%);
   border-radius: 5px;
 }
 
@@ -470,7 +470,7 @@ h2 {
   width: 48px;
   height: 48px;
   margin: auto;
-  border: 2px solid rgb(36 90 80 / 12%);
+  border: 2px solid rgb(46 111 149 / 14%);
   border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 800ms linear infinite;

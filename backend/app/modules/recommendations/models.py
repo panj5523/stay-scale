@@ -34,6 +34,7 @@ class RecommendationSession(TimestampMixin, Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("user_accounts.id", ondelete="SET NULL"))
     public_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True)
     city: Mapped[str] = mapped_column(String(64), nullable=False)
     check_in: Mapped[date] = mapped_column(Date, nullable=False)

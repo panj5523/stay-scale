@@ -11,6 +11,8 @@ from app.modules.recommendations.schemas import (
     RecommendationResponse,
 )
 from app.modules.recommendations.service import RecommendationService
+from app.modules.users.dependencies import optional_user, require_user
+from app.modules.users.models import UserAccount
 
 router = APIRouter()
 
@@ -19,8 +21,20 @@ router = APIRouter()
 async def create_recommendation(
     request: RecommendationRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    user: Annotated[UserAccount | None, Depends(optional_user)],
 ) -> RecommendationResponse:
-    return await RecommendationService(session).recommend(request)
+    service = RecommendationService(session)
+    if user is None:
+        return await service.recommend(request)
+    return await service.recommend(request, user.id)
+
+
+@router.get("/history", response_model=list[RecommendationResponse])
+async def get_recommendation_history(
+    user: Annotated[UserAccount, Depends(require_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[RecommendationResponse]:
+    return await RecommendationService(session).history(user.id)
 
 
 @router.get("/{session_id}", response_model=RecommendationResponse)

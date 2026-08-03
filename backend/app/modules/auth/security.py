@@ -43,3 +43,26 @@ def decode_access_token(token: str) -> dict[str, Any]:
     if payload.get("type") != "admin_access" or not payload.get("sub"):
         raise InvalidTokenError("Invalid access token type")
     return payload
+
+
+def create_user_access_token(*, subject: str) -> tuple[str, int]:
+    expires_in = settings.auth_token_expire_minutes * 60
+    now = datetime.now(UTC)
+    payload = {
+        "sub": subject,
+        "role": "user",
+        "type": "user_access",
+        "iat": now,
+        "exp": now + timedelta(seconds=expires_in),
+    }
+    return jwt.encode(payload, settings.auth_secret_key, algorithm=ALGORITHM), expires_in
+
+
+def decode_user_access_token(token: str) -> dict[str, Any]:
+    try:
+        payload = jwt.decode(token, settings.auth_secret_key, algorithms=[ALGORITHM])
+    except jwt.PyJWTError as exc:
+        raise InvalidTokenError("Invalid or expired access token") from exc
+    if payload.get("type") != "user_access" or not payload.get("sub"):
+        raise InvalidTokenError("Invalid user access token type")
+    return payload

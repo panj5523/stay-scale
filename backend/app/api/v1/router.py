@@ -12,6 +12,7 @@ from app.api.v1 import (
     recommendations,
     review_analysis,
     travel_plans,
+    users,
 )
 
 api_router = APIRouter()
@@ -38,3 +39,4 @@ api_router.include_router(
 )
 api_router.include_router(operations.router, prefix="/management", tags=["operations"])
 api_router.include_router(data_retention.router, prefix="/management", tags=["data-retention"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])

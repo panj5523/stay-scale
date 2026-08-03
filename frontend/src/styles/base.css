@@ -13,9 +13,19 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 85% 12%, rgb(216 107 61 / 12%), transparent 26rem),
-    linear-gradient(120deg, transparent 0 74%, rgb(36 90 80 / 5%) 74% 75%, transparent 75%),
+    radial-gradient(circle at 8% 6%, rgb(221 236 232 / 55%), transparent 28rem),
+    radial-gradient(circle at 92% 2%, rgb(244 232 208 / 48%), transparent 24rem),
     var(--color-canvas);
+}
+
+::selection {
+  color: white;
+  background: var(--color-primary-soft);
+}
+
+:focus-visible {
+  outline: 3px solid rgb(226 109 90 / 30%);
+  outline-offset: 3px;
 }
 
 body.drawer-open {
@@ -48,8 +58,8 @@ button {
   right: 15px;
   width: 300px;
   height: 210px;
-  border-top: 1px dashed rgb(36 90 80 / 28%);
-  border-right: 1px dashed rgb(36 90 80 / 28%);
+  border-top: 1px dashed rgb(46 111 149 / 28%);
+  border-right: 1px dashed rgb(46 111 149 / 28%);
   border-radius: 0 120px 0 0;
   transform: rotate(-8deg);
   pointer-events: none;
@@ -118,7 +128,7 @@ button {
 
 .stage-badge {
   color: var(--color-primary);
-  background: rgb(255 252 246 / 72%);
+  background: rgb(255 253 248 / 78%);
   border: 1px solid var(--color-border);
 }
 
@@ -161,7 +171,7 @@ button {
   position: relative;
   z-index: 1;
   padding: 34px;
-  background: rgb(255 252 246 / 90%);
+  background: rgb(255 253 248 / 92%);
   border: 1px solid rgb(221 214 201 / 82%);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);

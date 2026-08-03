@@ -1,5 +1,6 @@
 from app.db.base import Base
 from app.modules.auth.models import AdminUser  # noqa: F401
+from app.modules.data_retention.models import ArchiveRestoreRequest  # noqa: F401
 from app.modules.ingestion.models import (  # noqa: F401
     IngestionBatch,
     IngestionRecord,
@@ -26,5 +27,6 @@ from app.modules.review_analysis.models import (  # noqa: F401
     ReviewAnalysisSnapshot,
 )
 from app.modules.travel_planning.models import TravelPlanDraft  # noqa: F401
+from app.modules.users.models import UserAccount, UserFavorite  # noqa: F401
 
 __all__ = ["Base"]
