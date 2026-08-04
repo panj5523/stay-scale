@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -94,6 +94,9 @@ class RecommendationResult(TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     best_rating: Mapped[Decimal | None] = mapped_column(Numeric(3, 2))
     platform_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    price_captured_at: Mapped[datetime | None] = mapped_column()
+    price_freshness_status: Mapped[str | None] = mapped_column(String(16))
+    price_age_minutes: Mapped[int | None] = mapped_column(Integer)
     natural_explanation: Mapped[str | None] = mapped_column(Text)
     explanation_source: Mapped[str | None] = mapped_column(String(32))
 

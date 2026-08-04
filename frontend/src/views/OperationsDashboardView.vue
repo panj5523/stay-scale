@@ -78,7 +78,7 @@ onMounted(loadDashboard)
   <main class="dashboard-page">
     <header class="dashboard-header">
       <RouterLink class="brand" to="/"><span>S</span><strong>Stay Scale</strong></RouterLink>
-      <nav><RouterLink to="/management/reviews">审核队列</RouterLink><RouterLink to="/management/restore-requests">恢复审批</RouterLink><RouterLink to="/">普通页面</RouterLink><button type="button" @click="logout">退出登录</button></nav>
+      <nav><RouterLink to="/management/reviews">审核队列</RouterLink><RouterLink to="/management/platform-sync">平台同步</RouterLink><RouterLink to="/management/restore-requests">恢复审批</RouterLink><RouterLink to="/">普通页面</RouterLink><button type="button" @click="logout">退出登录</button></nav>
     </header>
 
     <section class="dashboard-hero">

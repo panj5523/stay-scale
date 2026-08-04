@@ -1,0 +1,1 @@
+"""Authorized platform synchronization orchestration."""

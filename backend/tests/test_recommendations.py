@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
@@ -134,3 +134,28 @@ def test_feedback_interpreter_changes_only_supported_preferences() -> None:
     assert interpretation.request.preferred_facilities == ["sea_view"]
     assert interpretation.request.preferred_districts == ["双廊镇"]
     assert interpretation.applied_changes["travel_style"] == "scenery"
+
+
+def test_stale_price_reduces_score_and_adds_risk_note() -> None:
+    fresh = candidates()[0]
+    stale = RecommendationCandidate(
+        canonical_listing_id=fresh.canonical_listing_id,
+        public_id=fresh.public_id,
+        name=fresh.name,
+        district=fresh.district,
+        total_amount=fresh.total_amount,
+        currency=fresh.currency,
+        best_rating=fresh.best_rating,
+        platform_count=fresh.platform_count,
+        facility_codes=fresh.facility_codes,
+        price_captured_at=datetime(2026, 8, 1, 2, 0),
+        price_freshness_status="stale",
+        price_age_minutes=240,
+    )
+
+    fresh_score = RecommendationEngine().rank([fresh], request())[0]
+    stale_score = RecommendationEngine().rank([stale], request())[0]
+
+    assert stale_score.total_score < fresh_score.total_score
+    assert stale_score.breakdown.price_freshness == Decimal("45.00")
+    assert any("240 分钟" in note for note in stale_score.risk_notes)

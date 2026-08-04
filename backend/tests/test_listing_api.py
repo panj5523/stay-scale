@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from datetime import datetime
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
@@ -42,6 +43,9 @@ def test_search_listings_returns_paginated_comparison(monkeypatch) -> None:
                     lowest_total_amount=Decimal("1302.00"),
                     currency="CNY",
                     best_rating=Decimal("4.83"),
+                    oldest_price_captured_at=datetime(2026, 8, 1, 2, 0),
+                    freshness_status="fresh",
+                    age_minutes=30,
                 )
             ],
             total=1,

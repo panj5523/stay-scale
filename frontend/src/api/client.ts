@@ -11,7 +11,8 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = config.url?.includes('/v1/users') ? getUserToken() : getAdminToken()
+  const isManagementRequest = config.url?.includes('/v1/management') || config.url?.includes('/v1/auth')
+  const token = isManagementRequest ? getAdminToken() : getUserToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -20,8 +21,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      if (error.config?.url?.includes('/v1/users')) clearUserSession()
-      else clearAdminSession()
+      const isManagementRequest = error.config?.url?.includes('/v1/management') || error.config?.url?.includes('/v1/auth')
+      if (isManagementRequest) clearAdminSession()
+      else clearUserSession()
     }
     return Promise.reject(error)
   },

@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from app.modules.recommendations.schemas import RecommendationRequest, ScoreBreakdown
 
-ALGORITHM_VERSION = "explainable-v1"
+ALGORITHM_VERSION = "explainable-v2"
 
 STYLE_WEIGHTS = {
     "value": {
@@ -55,6 +56,9 @@ class RecommendationCandidate:
     best_rating: Decimal | None
     platform_count: int
     facility_codes: set[str]
+    price_captured_at: datetime | None = None
+    price_freshness_status: str = "unknown"
+    price_age_minutes: int | None = None
 
 
 @dataclass(frozen=True)
@@ -126,12 +130,16 @@ class RecommendationEngine:
         }
         weights = STYLE_WEIGHTS[request.travel_style]
         total = sum(components[key] * weights[key] for key in weights) * 100
+        freshness_score = 0.45 if candidate.price_freshness_status == "stale" else 1.0
+        if candidate.price_freshness_status == "stale":
+            total *= 0.90
         breakdown = ScoreBreakdown(
             price=self._percent(price_score),
             rating=self._percent(rating_score),
             facilities=self._percent(facility_score),
             platform_coverage=self._percent(coverage_score),
             location=self._percent(location_score),
+            price_freshness=self._percent(freshness_score),
         )
         reasons = self._reasons(
             candidate,
@@ -174,6 +182,10 @@ class RecommendationEngine:
         candidate: RecommendationCandidate, request: RecommendationRequest
     ) -> list[str]:
         notes: list[str] = []
+        if candidate.price_freshness_status == "stale":
+            notes.append(
+                f"最低报价已采集 {candidate.price_age_minutes or 0} 分钟，预订前需要重新确认"
+            )
         if candidate.best_rating is None:
             notes.append("当前没有可用的平台评分")
         elif candidate.best_rating < Decimal("4.80"):

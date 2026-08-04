@@ -77,7 +77,8 @@ class ListingRepository:
                    COUNT(DISTINCT cp.id) AS offer_count,
                    MIN(cp.total_amount) AS lowest_total_amount,
                    MIN(cp.currency) AS currency,
-                   MAX(pl.rating) AS best_rating
+                   MAX(pl.rating) AS best_rating,
+                   MIN(cp.captured_at) AS oldest_price_captured_at
             """
             + from_sql
             + having_sql

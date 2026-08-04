@@ -6,9 +6,11 @@ import EnvironmentStatusView from '../views/EnvironmentStatusView.vue'
 import ListingSearchView from '../views/ListingSearchView.vue'
 import ManagementReviewView from '../views/ManagementReviewView.vue'
 import OperationsDashboardView from '../views/OperationsDashboardView.vue'
+import PlatformSyncView from '../views/PlatformSyncView.vue'
 import RecommendationView from '../views/RecommendationView.vue'
 import RestoreApprovalView from '../views/RestoreApprovalView.vue'
 import UserAccountView from '../views/UserAccountView.vue'
+import AIConversationView from '../views/AIConversationView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,6 +30,7 @@ const router = createRouter({
       name: 'user-account',
       component: UserAccountView,
     },
+    { path: '/ai-companion', name: 'ai-companion', component: AIConversationView },
     {
       path: '/compare',
       name: 'comparison',
@@ -54,6 +57,12 @@ const router = createRouter({
       path: '/management/restore-requests',
       name: 'management-restore-requests',
       component: RestoreApprovalView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/management/platform-sync',
+      name: 'management-platform-sync',
+      component: PlatformSyncView,
       meta: { requiresAdmin: true },
     },
     {

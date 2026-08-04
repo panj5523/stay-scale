@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    ai_conversations,
     auth,
     data_retention,
     health,
@@ -8,6 +9,7 @@ from app.api.v1 import (
     listings,
     management_review,
     operations,
+    platform_sync,
     preference_parsing,
     recommendations,
     review_analysis,
@@ -39,4 +41,6 @@ api_router.include_router(
 )
 api_router.include_router(operations.router, prefix="/management", tags=["operations"])
 api_router.include_router(data_retention.router, prefix="/management", tags=["data-retention"])
+api_router.include_router(platform_sync.router, prefix="/management", tags=["platform-sync"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(ai_conversations.router, prefix="/users/ai", tags=["ai-conversations"])

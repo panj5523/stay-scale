@@ -78,6 +78,21 @@ class TravelPlanService:
         await self.session.commit()
         return self._response(draft, recommendation_id)
 
+    async def history(self, user_id: int) -> list[TravelPlanResponse]:
+        rows = (
+            await self.session.execute(
+                select(TravelPlanDraft, RecommendationSession.public_id)
+                .join(
+                    RecommendationSession,
+                    RecommendationSession.id == TravelPlanDraft.recommendation_session_id,
+                )
+                .where(RecommendationSession.user_id == user_id)
+                .order_by(TravelPlanDraft.created_at.desc())
+                .limit(50)
+            )
+        ).all()
+        return [self._response(draft, recommendation_id) for draft, recommendation_id in rows]
+
     async def _generate(
         self, recommendation: RecommendationSession
     ) -> tuple[TravelPlanPayload, str, str, tuple[int | None, int | None, int | None], str | None]:

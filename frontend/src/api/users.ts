@@ -19,3 +19,21 @@ export async function removeUserFavorite(listingId: string): Promise<void> { awa
 export async function getRecommendationHistory(): Promise<Array<{ session_id: string; request: { city: string; check_in: string; check_out: string }; results: unknown[] }>> {
   return (await apiClient.get('/v1/recommendations/history')).data
 }
+export interface TravelPlanHistoryItem {
+  plan_id: string
+  recommendation_session_id: string
+  status: 'draft'
+  city: string
+  check_in: string
+  check_out: string
+  guests: number
+  provider: string
+  model: string
+  summary: string
+  days: Array<{ date: string; title: string; items: Array<{ time_label: string; activity: string; reason: string; note: string }> }>
+  warnings: string[]
+  created_at: string
+}
+export async function getTravelPlanHistory(): Promise<TravelPlanHistoryItem[]> {
+  return (await apiClient.get('/v1/users/me/travel-plans')).data
+}

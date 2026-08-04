@@ -18,6 +18,7 @@ export interface ScoreBreakdown {
   facilities: string
   platform_coverage: string
   location: string
+  price_freshness: string
 }
 
 export interface RecommendationItem {
@@ -36,6 +37,9 @@ export interface RecommendationItem {
   risk_notes?: string[]
   natural_explanation?: string | null
   explanation_source?: string | null
+  price_captured_at?: string | null
+  price_freshness_status?: 'fresh' | 'stale' | 'unknown'
+  price_age_minutes?: number | null
 }
 
 export interface RecommendationAdjustmentResponse {

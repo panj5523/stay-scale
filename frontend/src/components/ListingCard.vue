@@ -24,6 +24,9 @@ const nightlyAmount = computed(() => {
   const total = Number(props.listing.lowest_total_amount)
   return Number.isFinite(total) ? total / Math.max(props.nights, 1) : 0
 })
+const freshnessLabel = computed(() => props.listing.freshness_status === 'fresh'
+  ? `价格已更新 · ${props.listing.age_minutes} 分钟前`
+  : `价格可能已变动 · ${props.listing.age_minutes} 分钟前`)
 </script>
 
 <template>
@@ -78,6 +81,7 @@ const nightlyAmount = computed(() => {
         <strong>{{ formatCurrency(listing.lowest_total_amount, listing.currency) }}</strong>
         <small>{{ nights }} 晚最低总价</small>
       </div>
+      <p class="freshness-badge" :class="`freshness-badge--${listing.freshness_status}`">{{ freshnessLabel }}</p>
       <div class="card-actions">
         <button
           class="compare-list-button"
@@ -328,6 +332,9 @@ h2 {
   grid-template-columns: 0.82fr 1.18fr;
   gap: 8px;
 }
+
+.freshness-badge { grid-column: 1 / -1; margin: 0; padding: 7px 9px; color: #276557; font-size: .64rem; font-weight: 800; background: rgb(39 101 87 / 8%); border-radius: 7px; }
+.freshness-badge--stale { color: #a44831; background: rgb(180 95 53 / 11%); }
 
 .card-actions button {
   display: flex;

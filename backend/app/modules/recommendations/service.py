@@ -12,6 +12,7 @@ from app.modules.ai.recommendation_explainer import DeepSeekRecommendationExplai
 from app.modules.ai.schemas import AIProviderError
 from app.modules.listings.repository import ListingRepository
 from app.modules.listings.schemas import ListingSearchParams
+from app.modules.pricing.freshness import freshness_status
 from app.modules.recommendations.engine import (
     ALGORITHM_VERSION,
     RecommendationCandidate,
@@ -71,6 +72,11 @@ class RecommendationService:
                 best_rating=row["best_rating"],
                 platform_count=int(row["platform_count"]),
                 facility_codes={item["code"] for item in facility_map[int(row["id"])]},
+                price_captured_at=row["oldest_price_captured_at"],
+                price_freshness_status=(freshness := freshness_status(
+                    row["oldest_price_captured_at"]
+                ))[0],
+                price_age_minutes=freshness[1],
             )
             for row in rows
         ]
@@ -258,6 +264,9 @@ class RecommendationService:
             currency=candidate.currency,
             best_rating=candidate.best_rating,
             platform_count=candidate.platform_count,
+            price_captured_at=candidate.price_captured_at,
+            price_freshness_status=candidate.price_freshness_status,
+            price_age_minutes=candidate.price_age_minutes,
         )
 
     @staticmethod
@@ -278,6 +287,9 @@ class RecommendationService:
             risk_notes=result.risk_notes,
             natural_explanation=result.natural_explanation,
             explanation_source=result.explanation_source,
+            price_captured_at=result.price_captured_at,
+            price_freshness_status=result.price_freshness_status or "unknown",
+            price_age_minutes=result.price_age_minutes,
         )
 
     @staticmethod
@@ -353,6 +365,9 @@ class RecommendationService:
                     risk_notes=scored.risk_notes,
                     natural_explanation=None,
                     explanation_source=None,
+                    price_captured_at=scored.candidate.price_captured_at,
+                    price_freshness_status=scored.candidate.price_freshness_status,
+                    price_age_minutes=scored.candidate.price_age_minutes,
                 )
                 for rank, scored in enumerate(ranked, start=1)
             ],

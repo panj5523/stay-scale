@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 
             <div class="total-cell">
               <span>{{ nights }} 晚总价</span>
-              <strong>{{ formatCurrency(offer.total_amount, offer.currency) }}</strong>
+              <strong>{{ formatCurrency(offer.total_amount, offer.currency) }}</strong><small :class="['freshness', offer.freshness_status === 'stale' ? 'stale' : 'fresh']">{{ offer.freshness_status === 'stale' ? '价格可能已过期' : '价格较新' }} · {{ offer.age_minutes ?? 0 }} 分钟前</small>
               <small>{{ offer.price_type === 'standard' ? '标准价' : '含条件优惠' }}</small>
             </div>
           </article>

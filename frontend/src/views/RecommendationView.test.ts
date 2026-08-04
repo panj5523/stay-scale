@@ -6,6 +6,7 @@ import {
   createTravelPlan,
   createRecommendation,
   explainRecommendation,
+  getRecommendation,
 } from '../api/recommendations'
 import type { PreferenceParseResponse } from '../types/preferenceParsing'
 import type { RecommendationResponse } from '../types/recommendations'
@@ -16,6 +17,7 @@ vi.mock('../api/recommendations', () => ({
   adjustRecommendation: vi.fn(),
   createTravelPlan: vi.fn(),
   explainRecommendation: vi.fn(),
+  getRecommendation: vi.fn(),
 }))
 
 vi.mock('../api/preferenceParsing', () => ({
@@ -55,6 +57,7 @@ const completedResponse: RecommendationResponse = {
         facilities: '75.00',
         platform_coverage: '66.67',
         location: '50.00',
+        price_freshness: '100.00',
       },
       reasons: ['入住总价在你的预算内。', '在当前可订候选中总价更有优势。'],
     },
@@ -101,6 +104,9 @@ function mountView() {
 }
 
 beforeEach(() => {
+  window.history.replaceState({}, '', '/')
+  sessionStorage.clear()
+  vi.mocked(getRecommendation).mockReset().mockResolvedValue(completedResponse)
   vi.mocked(createRecommendation).mockReset().mockResolvedValue(completedResponse)
   vi.mocked(adjustRecommendation).mockReset().mockResolvedValue({
     original_session_id: 'session-001',
@@ -169,6 +175,28 @@ beforeEach(() => {
 })
 
 describe('RecommendationView', () => {
+  it('loads preferences transferred from the AI companion', async () => {
+    sessionStorage.setItem('stay_scale_ai_recommendation_draft', JSON.stringify(parseResponse.draft))
+    window.history.replaceState({}, '', '/recommendations?source=ai')
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('AI 旅行助手已填入识别结果')
+    expect((wrapper.find('input[name="city"]').element as HTMLInputElement).value).toBe('大理市')
+    expect((wrapper.find('input[name="budget"]').element as HTMLInputElement).value).toBe('2200')
+    expect(sessionStorage.getItem('stay_scale_ai_recommendation_draft')).toBeNull()
+  })
+
+  it('loads a recommendation selected from user history', async () => {
+    window.history.replaceState({}, '', '/recommendations?session=session-001')
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(getRecommendation).toHaveBeenCalledWith('session-001')
+    expect(wrapper.text()).toContain(completedResponse.results[0].listing_name)
+    expect(wrapper.text()).toContain('返回个人中心')
+  })
+
   it('submits the default preferences and renders explainable results', async () => {
     const wrapper = mountView()
 

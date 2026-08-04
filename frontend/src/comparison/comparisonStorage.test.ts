@@ -16,6 +16,9 @@ const listing: ListingSummary = {
   platform_count: 3,
   offer_count: 4,
   lowest_total_amount: '1302.00',
+  oldest_price_captured_at: '2026-08-04T10:00:00',
+  freshness_status: 'fresh',
+  age_minutes: 30,
   currency: 'CNY',
   best_rating: '4.83',
 }

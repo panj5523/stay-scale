@@ -3,7 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.rate_limit import rate_limit
 from app.db.session import get_db_session
+from app.modules.travel_planning.schemas import TravelPlanResponse
+from app.modules.travel_planning.service import TravelPlanService
 from app.modules.users.dependencies import require_user
 from app.modules.users.models import UserAccount
 from app.modules.users.schemas import (
@@ -18,7 +21,12 @@ from app.modules.users.service import UserService
 router = APIRouter()
 
 
-@router.post("/auth/register", response_model=UserLoginResponse, status_code=201)
+@router.post(
+    "/auth/register",
+    response_model=UserLoginResponse,
+    status_code=201,
+    dependencies=[Depends(rate_limit("user-register", 5))],
+)
 async def register_user(
     payload: UserRegisterRequest, session: Annotated[AsyncSession, Depends(get_db_session)]
 ) -> UserLoginResponse:
@@ -30,7 +38,11 @@ async def register_user(
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
-@router.post("/auth/login", response_model=UserLoginResponse)
+@router.post(
+    "/auth/login",
+    response_model=UserLoginResponse,
+    dependencies=[Depends(rate_limit("user-login", 10))],
+)
 async def login_user(
     payload: UserLoginRequest, session: Annotated[AsyncSession, Depends(get_db_session)]
 ) -> UserLoginResponse:
@@ -73,3 +85,11 @@ async def remove_user_favorite(
 ) -> Response:
     await UserService(session).remove_favorite(user, listing_public_id)
     return Response(status_code=204)
+
+
+@router.get("/me/travel-plans", response_model=list[TravelPlanResponse])
+async def list_user_travel_plans(
+    user: Annotated[UserAccount, Depends(require_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[TravelPlanResponse]:
+    return await TravelPlanService(session).history(user.id)

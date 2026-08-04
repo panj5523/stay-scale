@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     retention_recommendation_days: int = 365
     archive_output_dir: str = ".runtime/archives"
     archive_max_records_per_table: int = 10000
+    price_freshness_minutes: int = 180
+    platform_sync_scheduler_enabled: bool = False
+    platform_sync_poll_seconds: int = 60
+    platform_sync_retry_attempts: int = 3
+    platform_sync_retry_delay_seconds: float = 2.0
+    log_format: str = "text"
+    log_level: str = "INFO"
+    slow_request_threshold_ms: int = 1000
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -33,6 +33,7 @@ class ScoreBreakdown(BaseModel):
     facilities: Decimal
     platform_coverage: Decimal
     location: Decimal
+    price_freshness: Decimal = Decimal("100.00")
 
 
 class RecommendationItem(BaseModel):
@@ -51,6 +52,9 @@ class RecommendationItem(BaseModel):
     risk_notes: list[str] = Field(default_factory=list)
     natural_explanation: str | None = Field(default=None, max_length=500)
     explanation_source: str | None = Field(default=None, max_length=32)
+    price_captured_at: datetime | None = None
+    price_freshness_status: Literal["fresh", "stale", "unknown"] = "unknown"
+    price_age_minutes: int | None = None
 
 
 class RecommendationResponse(BaseModel):

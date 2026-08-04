@@ -37,6 +37,9 @@ export interface ListingSummary {
   lowest_total_amount: string
   currency: string
   best_rating: string | null
+  oldest_price_captured_at: string
+  freshness_status: 'fresh' | 'stale'
+  age_minutes: number
 }
 
 export interface ListingSearchResponse {
@@ -72,6 +75,8 @@ export interface PlatformOffer {
   promotion_conditions: string | null
   remaining_units: number | null
   captured_at: string
+  freshness_status?: 'fresh' | 'stale'
+  age_minutes?: number
 }
 
 export interface ListingDetail {

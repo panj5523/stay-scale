@@ -64,6 +64,9 @@ class ListingSummaryResponse(BaseModel):
     lowest_total_amount: Decimal
     currency: str
     best_rating: Decimal | None
+    oldest_price_captured_at: datetime
+    freshness_status: Literal["fresh", "stale"]
+    age_minutes: int
 
 
 class ListingSearchResponse(BaseModel):
@@ -99,6 +102,8 @@ class PlatformOfferResponse(BaseModel):
     promotion_conditions: str | None
     remaining_units: int | None
     captured_at: datetime
+    freshness_status: str = "fresh"
+    age_minutes: int = 0
 
 
 class ListingDetailResponse(BaseModel):

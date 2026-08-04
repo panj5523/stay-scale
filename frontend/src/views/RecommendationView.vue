@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { confirmPreferenceParse, parsePreferences } from '../api/preferenceParsing'
 import {
   adjustRecommendation,
   createTravelPlan,
   createRecommendation,
   explainRecommendation,
+  getRecommendation,
 } from '../api/recommendations'
 import type {
   ParsedPreferences,
@@ -21,12 +22,14 @@ import type {
   TravelPlanResponse,
 } from '../types/recommendations'
 import { formatShortDate, nextDateValue, stayNights } from '../utils/format'
+import { consumeAIRecommendationDraft } from '../ai/recommendationTransfer'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 type ParseState = 'idle' | 'loading' | 'success' | 'error'
 type FeedbackState = 'idle' | 'loading' | 'error'
 type ExplanationState = 'idle' | 'loading' | 'error'
 type PlanState = 'idle' | 'loading' | 'error'
+
 
 const travelStyles: Array<{
   code: TravelStyle
@@ -58,6 +61,7 @@ const scoreLabels: Array<{ key: keyof ScoreBreakdown; label: string }> = [
   { key: 'facilities', label: '设施' },
   { key: 'platform_coverage', label: '平台覆盖' },
   { key: 'location', label: '区域' },
+  { key: 'price_freshness', label: '价格时效' },
 ]
 
 const form = reactive({
@@ -91,6 +95,8 @@ const explanationError = ref('')
 const travelPlan = ref<TravelPlanResponse | null>(null)
 const planState = ref<PlanState>('idle')
 const planError = ref('')
+const historicalSessionId = new URLSearchParams(window.location.search).get('session') ?? ''
+const aiDraftImported = ref(false)
 
 const selectedStyle = computed(
   () => travelStyles.find((style) => style.code === form.travelStyle) ?? travelStyles[0],
@@ -229,6 +235,46 @@ async function runRecommendation() {
   }
 }
 
+async function loadHistoricalRecommendation() {
+  if (!historicalSessionId) return
+  loadState.value = 'loading'
+  requestError.value = ''
+  try {
+    const historical = await getRecommendation(historicalSessionId)
+    recommendation.value = historical
+    form.city = historical.request.city
+    form.checkIn = historical.request.check_in
+    form.checkOut = historical.request.check_out
+    form.guests = historical.request.guests
+    form.budgetTotal = historical.request.budget_total ?? ''
+    form.preferredFacilities = [...historical.request.preferred_facilities]
+    form.preferredDistricts = [...historical.request.preferred_districts]
+    form.travelStyle = historical.request.travel_style
+    form.topK = historical.request.top_k
+    loadState.value = 'success'
+  } catch {
+    recommendation.value = null
+    loadState.value = 'error'
+    requestError.value = '没有找到这条历史推荐，或者该记录已经不可用。'
+  }
+}
+
+function loadTransferredAIDraft() {
+  if (new URLSearchParams(window.location.search).get('source') !== 'ai') return
+  const draft = consumeAIRecommendationDraft()
+  if (!draft) return
+  if (draft.city) form.city = draft.city
+  if (draft.check_in) form.checkIn = draft.check_in
+  if (draft.check_out) form.checkOut = draft.check_out
+  if (draft.guests) form.guests = draft.guests
+  if (draft.budget_total) form.budgetTotal = draft.budget_total
+  form.preferredFacilities = [...draft.preferred_facilities]
+  form.preferredDistricts = [...draft.preferred_districts]
+  if (draft.travel_style) form.travelStyle = draft.travel_style
+  parsedRiskAversion.value = draft.risk_aversion
+  aiDraftImported.value = true
+}
+
 async function applyFeedback() {
   if (!recommendation.value || feedbackText.value.trim().length < 3) {
     feedbackState.value = 'error'
@@ -284,6 +330,11 @@ function scoreWidth(score: string): string {
 function rankLabel(item: RecommendationItem): string {
   return item.rank.toString().padStart(2, '0')
 }
+
+onMounted(() => {
+  loadTransferredAIDraft()
+  void loadHistoricalRecommendation()
+})
 </script>
 
 <template>
@@ -294,7 +345,8 @@ function rankLabel(item: RecommendationItem): string {
         <span class="brand-copy"><strong>Stay Scale</strong><small>住得明白，也住得合拍</small></span>
       </RouterLink>
       <nav aria-label="主导航">
-        <RouterLink to="/">找民宿</RouterLink>
+        <RouterLink v-if="historicalSessionId" class="history-return" to="/account">← 返回个人中心</RouterLink>
+        <RouterLink class="find-stay-link" to="/">找民宿</RouterLink>
         <a class="active" href="#preference-studio">智能推荐</a>
         <RouterLink to="/status">运行状态</RouterLink>
       </nav>
@@ -311,13 +363,14 @@ function rankLabel(item: RecommendationItem): string {
         </p>
       </div>
       <div class="hero-score" aria-label="推荐算法说明">
-        <div><span>5</span><small>项评分维度</small></div>
+        <div><span>6</span><small>项评分维度</small></div>
         <div><span>4</span><small>种旅行风格</small></div>
         <p>EXPLAINABLE<br />BY DESIGN</p>
       </div>
     </section>
 
     <form id="preference-studio" class="preference-studio" @submit.prevent="runRecommendation">
+      <p v-if="aiDraftImported" class="ai-transfer-notice">AI 旅行助手已填入识别结果，请确认日期、人数和预算后再生成推荐。</p>
       <section class="language-brief" aria-labelledby="language-brief-title">
         <div class="brief-heading">
           <div>
@@ -567,6 +620,9 @@ function rankLabel(item: RecommendationItem): string {
           <div class="listing-summary">
             <p>{{ item.district }} · {{ item.platform_count }} 个平台可比</p>
             <h3>{{ item.listing_name }}</h3>
+            <p class="recommendation-freshness" :class="`recommendation-freshness--${item.price_freshness_status ?? 'unknown'}`">
+              {{ item.price_freshness_status === 'fresh' ? `价格已更新 · ${item.price_age_minutes ?? 0} 分钟前` : item.price_freshness_status === 'stale' ? `价格可能已变动 · ${item.price_age_minutes ?? 0} 分钟前` : '历史推荐未记录价格时效' }}
+            </p>
             <blockquote v-if="item.natural_explanation" class="natural-explanation">
               {{ item.natural_explanation }}
             </blockquote>
@@ -611,9 +667,9 @@ function rankLabel(item: RecommendationItem): string {
 </template>
 
 <style scoped>
-.recommendation-page { min-height: 100vh; overflow: hidden; }
+.recommendation-page { min-height: 100vh; padding-top: 82px; overflow-x: clip; }
 .recommendation-header, .recommendation-hero, .preference-studio, .result-section, .recommendation-footer { width: min(1240px, calc(100% - 48px)); margin-inline: auto; }
-.recommendation-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 0; }
+.recommendation-header { position: fixed; top: 0; left: 50%; z-index: 100; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; padding: 18px 20px; background: rgb(247 243 234 / 92%); border-bottom: 1px solid var(--color-border); border-radius: 0 0 14px 14px; box-shadow: 0 10px 28px rgb(31 58 51 / 7%); backdrop-filter: blur(14px); transform: translateX(-50%); }
 .brand { display: inline-flex; gap: 11px; align-items: center; color: var(--color-primary-deep); text-decoration: none; }
 .brand-mark { display: grid; width: 36px; height: 36px; color: var(--color-surface); font-family: Georgia, serif; font-weight: 700; background: var(--color-primary); border-radius: 50% 50% 50% 14%; place-items: center; }
 .brand-mark.small { width: 28px; height: 28px; font-size: .75rem; }
@@ -624,6 +680,7 @@ nav { display: flex; gap: 28px; }
 nav a { position: relative; padding: 7px 0; color: var(--color-muted); font-size: .78rem; font-weight: 700; text-decoration: none; }
 nav a.active { color: var(--color-primary-deep); }
 nav a.active::after { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; content: ''; background: var(--color-accent); }
+.history-return { color: var(--color-accent); }
 
 .recommendation-hero { position: relative; display: grid; grid-template-columns: 130px minmax(0, 1fr) 230px; gap: 42px; align-items: center; padding: 92px 0 112px; }
 .recommendation-hero::after { position: absolute; top: 55px; right: 7%; width: 310px; height: 200px; content: ''; border-top: 1px dashed rgb(36 90 80 / 24%); border-right: 1px dashed rgb(36 90 80 / 24%); border-radius: 0 160px 0 0; transform: rotate(-8deg); pointer-events: none; }
@@ -640,6 +697,7 @@ nav a.active::after { position: absolute; right: 0; bottom: 0; left: 0; height: 
 .hero-score p { grid-column: 1 / -1; margin: 20px 0 0; color: var(--color-accent); font-size: .6rem; font-weight: 800; line-height: 1.5; letter-spacing: .16em; text-align: center; }
 
 .preference-studio { padding: 42px; background: rgb(255 252 246 / 91%); border: 1px solid var(--color-border); border-radius: 24px; box-shadow: 0 30px 80px rgb(31 58 51 / 12%); }
+.ai-transfer-notice { padding: 12px 14px; margin: 0 0 20px; color: #245a50; font-size: .76rem; font-weight: 800; background: rgb(36 90 80 / 8%); border-left: 3px solid #b45f35; border-radius: 8px; }
 .language-brief { padding: 0 0 40px; margin-bottom: 40px; border-bottom: 1px solid var(--color-border); }
 .brief-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .brief-heading p { margin: 0; color: var(--color-accent); font-size: .68rem; font-weight: 900; letter-spacing: .16em; }
@@ -750,6 +808,9 @@ fieldset legend span { margin-bottom: 7px; }
 .plan-items small { grid-column: 2; color: var(--color-muted); font-size: .68rem; line-height: 1.5; }
 .travel-plan-warning { margin: 18px 0 0; color: var(--color-muted); font-size: .68rem; }
 .recommendation-card { display: grid; grid-template-columns: 90px minmax(0, 1fr) 360px; min-height: 310px; margin-top: 16px; overflow: hidden; background: rgb(255 252 246 / 88%); border: 1px solid var(--color-border); border-radius: 22px; box-shadow: 0 18px 50px rgb(31 58 51 / 7%); }
+.recommendation-freshness { display: inline-block; width: fit-content; margin: 8px 0 2px; padding: 6px 9px; color: #276557; font-size: .64rem; font-weight: 800; background: rgb(39 101 87 / 8%); border-radius: 7px; }
+.recommendation-freshness--stale { color: #a44831; background: rgb(180 95 53 / 11%); }
+.recommendation-freshness--unknown { color: var(--color-muted); background: rgb(102 117 112 / 8%); }
 .rank-column { display: flex; align-items: center; flex-direction: column; padding: 26px 12px; color: var(--color-muted); background: rgb(36 90 80 / 5%); }
 .rank-column span { font-size: .56rem; font-weight: 900; letter-spacing: .16em; }
 .rank-column strong { margin-top: 15px; color: var(--color-primary); font-family: Georgia, serif; font-size: 3.2rem; font-weight: 400; }
@@ -801,7 +862,7 @@ fieldset legend span { margin-bottom: 7px; }
 
 @media (max-width: 720px) {
   .recommendation-header, .recommendation-hero, .preference-studio, .result-section, .recommendation-footer { width: min(100% - 28px, 620px); }
-  .brand-copy small, nav a:first-child { display: none; }
+  .brand-copy small, .find-stay-link { display: none; }
   nav { gap: 14px; }
   .recommendation-hero { display: block; padding: 62px 0 76px; }
   .hero-score { display: none; }

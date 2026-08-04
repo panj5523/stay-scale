@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.rate_limit import rate_limit
 from app.db.session import get_db_session
 from app.modules.auth.dependencies import require_admin
 from app.modules.auth.models import AdminUser
@@ -16,7 +17,11 @@ from app.modules.auth.service import AdminAuthService
 router = APIRouter()
 
 
-@router.post("/login", response_model=AdminLoginResponse)
+@router.post(
+    "/login",
+    response_model=AdminLoginResponse,
+    dependencies=[Depends(rate_limit("admin-login", 10))],
+)
 async def admin_login(
     request: AdminLoginRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
